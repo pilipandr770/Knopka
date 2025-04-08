@@ -9,7 +9,6 @@
 <body>
     <h2>Завантажити файл до бази знань</h2>
     <form method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
         <input type="file" name="file" required><br><br>
         <button type="submit">Завантажити</button>
     </form>

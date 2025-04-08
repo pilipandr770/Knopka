@@ -9,7 +9,6 @@
 <body>
     <h2>Авторизація</h2>
     <form method="POST">
-        {% csrf_token %}
         <input name="username" placeholder="Користувач" required><br>
         <input name="password" type="password" placeholder="Пароль" required><br>
         <button type="submit">Увійти</button>

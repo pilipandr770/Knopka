@@ -34,10 +34,32 @@
         i {
             color: #666;
         }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .top-bar a {
+            text-decoration: none;
+            color: white;
+            background-color: #4CAF50;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .top-bar a:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
-    <h2>Історія діалогів</h2>
+    <div class="top-bar">
+        <h2>Історія діалогів</h2>
+        <a href="/instructions">✏️ Інструкції для асистента</a>
+    </div>
+
     {% for client_id, logs in dialogues.items() %}
         <h3>Клієнт: {{ client_id }}</h3>
         <ul>

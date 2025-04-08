@@ -82,7 +82,7 @@ function startRecording() {
                     appendMessage(userText, true); // уточнення тексту
                 }
 
-                appendMessage(assistantText, false);
+            
                 appendAudioPlayer(audioUrl, assistantText);
             }).catch(error => {
                 console.error("Помилка:", error);

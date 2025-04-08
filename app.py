@@ -50,9 +50,21 @@ def process_audio():
     os.remove(tmp.name)
     user_message = transcription.text
 
-    # 🔍 Додаємо контекст із бази знань
+    # 📖 Зчитування інструкції
+    instruction_path = "storage/instructions.txt"
+    if os.path.exists(instruction_path):
+        with open(instruction_path, "r", encoding="utf-8") as f:
+            assistant_instructions = f.read().strip()
+    else:
+        assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
+
+    # 🔍 Додаємо інструкцію + контекст із бази знань
     knowledge = search_knowledgebase(user_message)
-    full_message = f"Контекст із бази знань:\n{knowledge}\n\nПитання користувача:\n{user_message}"
+    full_message = (
+        f"📌 Інструкція:\n{assistant_instructions}\n\n"
+        f"📚 Контекст із бази знань:\n{knowledge}\n\n"
+        f"🗣️ Питання користувача:\n{user_message}"
+    )
 
     # GPT Thread
     thread = openai.beta.threads.create()
@@ -148,6 +160,28 @@ def upload_knowledge():
 def dashboard():
     return render_template("dashboard.html", dialogues=dialogues)
 
+# 📘 Інструкції асистента
+@app.route("/instructions", methods=["GET", "POST"])
+@require_login
+def instructions():
+    instruction_file = "storage/instructions.txt"
+    content = ""
+    message = None
+
+    if request.method == "POST":
+        content = request.form.get("instructions", "")
+        with open(instruction_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        message = "Інструкції оновлено успішно!"
+
+    elif os.path.exists(instruction_file):
+        with open(instruction_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+    return render_template("instructions.html", content=content, message=message)
+
+
 # 🚀 Запуск
 if __name__ == "__main__":
+
     app.run(debug=True)
