@@ -1,0 +1,54 @@
+<!-- templates/dashboard.html -->
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Діалоги клієнтів</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h2 {
+            color: #333;
+        }
+        h3 {
+            color: #555;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        b {
+            color: #000;
+        }
+        i {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h2>Історія діалогів</h2>
+    {% for client_id, logs in dialogues.items() %}
+        <h3>Клієнт: {{ client_id }}</h3>
+        <ul>
+        {% for entry in logs %}
+            <li>
+                <b>{{ entry.timestamp }}:</b><br>
+                <i>Q:</i> {{ entry.question }}<br>
+                <i>A:</i> {{ entry.answer }}
+            </li>
+        {% endfor %}
+        </ul>
+    {% endfor %}
+</body>
+</html>
