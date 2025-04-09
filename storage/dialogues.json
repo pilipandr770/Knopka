@@ -384,6 +384,31 @@
       "timestamp": "2025-04-09T13:31:37.976439",
       "question": "Hallo, guten Tag! Wie geht es dir? Arbeitest du hier? Und erklär mir bitte, was kannst du machen?",
       "answer": "Hallo, guten Tag! Mir geht es großartig, danke, dass du fragst. Ja, ich arbeite hier als dein freundlicher Assistent bei der Firma „Rozum“. \n\nIch bin hier, um dir zu helfen, die Leistungen unserer AI-Lösungen für Webseiten, Online-Shops und Services zu erklären. Unser Hauptprodukt ist das „Rozum“-Widget, ein intelligenter AI-Berater, der:\n\n- Sich in nur 2 Minuten auf deiner Website installieren lässt.\n- Deine Kunden versteht und automatisch in ihrer Sprache kommuniziert.\n- Termine bucht, Anfragen beantwortet und bei der Produktauswahl hilft.\n- PDF-, Excel- und CSV-Dateien lesen und kontextbezogene Antworten geben kann.\n\nMöchtest du es ausprobieren oder mehr darüber erfahren? 🌟"
+    },
+    {
+      "timestamp": "2025-04-09T14:52:09.045867",
+      "question": "Привет, шо ты? Работаешь, всё нормально у тебя?",
+      "answer": "Привіт! Я — професійний голосовий асистент компанії «Розум». У мене все чудово, готовий допомогти тобі з будь-якими питаннями щодо наших AI-рішень для сайтів, онлайн-магазинів та сервісів. Як можу бути корисним для тебе сьогодні?"
+    },
+    {
+      "timestamp": "2025-04-09T14:53:48.804719",
+      "question": "Привіт, доброго дня, у тебе все гаразд? Ти працюєш, так?",
+      "answer": "Привіт! 😊 У мене все чудово, дякую, що запитав! Так, я працюю і готовий допомогти тобі. Що цікавого сьогодні обговоримо?"
+    },
+    {
+      "timestamp": "2025-04-09T15:02:24.947437",
+      "question": "Hallo, guten Tag, wie geht's dir, arbeitest du?",
+      "answer": "Hallo! Mir geht's großartig, danke! Ja, ich bin hier und arbeite, um dir zu helfen. Wie kann ich dir heute behilflich sein? Möchtest du mehr über unsere AI-Lösungen erfahren oder gibt es etwas Spezielles, worüber du sprechen möchtest?"
+    },
+    {
+      "timestamp": "2025-04-09T15:55:43.743079",
+      "question": "Привіт. Запиши мене, будь ласка, в календарь на зустріч з керівництвом. Я хочу обговорити дуже багату партію закупівлі всіяких ботів у вас зі штучним інтелектом. Коли це можливо, знайди дату. Мені не важливо коли, я буду чекати, коли це буде можливість у вас.",
+      "answer": "На жаль, виникла технічна проблема з пошуком вільних слотів у календарі. Але не хвилюйся! Ми можемо знайти для тебе підходящий час вручну. Які дні та години тобі найбільше підходять? 🗓️😊"
+    },
+    {
+      "timestamp": "2025-04-09T15:58:16.052359",
+      "question": "Які товари у вас є в наявності?",
+      "answer": "🔎 Ось перелік товарів, які у нас є в наявності:\n\n- **Торговий бот BTC** (Фінанси): 4900 грн\n- **Чат-бот для сайту** (Підтримка): 2900 грн\n- **AI-бот для CRM** (Автоматизація): 5500 грн\n- **Парсер резюме** (HR): 3500 грн\n- **Віджет-відповідач** (Сайт): 1900 грн\n\nЦе можуть бути чудові рішення для покращення вашого бізнесу! Хочете дізнатися більше або протестувати якусь із цих опцій? 😊"
     }
   ]
 }

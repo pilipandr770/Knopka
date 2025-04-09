@@ -1,10 +1,11 @@
-{% extends "base.html" %}
-{% block title %}Інструкції для асистента{% endblock %}
+<!-- 📁 templates/instructions_de.html -->
+{% extends "base_de.html" %}
+{% block title %}Anweisungen für Assistenten{% endblock %}
 {% block content %}
-<h2>Інструкції для асистента</h2>
+<h2>Anweisungen für den Assistenten</h2>
 <form method="POST">
     <textarea name="instructions" rows="10" cols="80">{{ content }}</textarea><br><br>
-    <button type="submit">💾 Зберегти</button>
+    <button type="submit">💾 Speichern</button>
 </form>
 {% if message %}
     <p style="color: green">{{ message }}</p>

@@ -1,0 +1,48 @@
+<!-- 📁 templates/index_de.html -->
+{% extends "base_de.html" %}
+{% block title %}Sprachassistent{% endblock %}
+{% block content %}
+<h1>🎙️ Sprachassistent</h1>
+
+<p><strong>Testen Sie jetzt die Demo-Version des Assistenten!</strong></p>
+
+<p>
+Dieser Sprachassistent basiert auf OpenAI-Technologien: Whisper (Spracherkennung), GPT (intelligente Antworten) und TTS (Sprachausgabe).<br>
+Er hat Zugriff auf eine Test-Produktdatenbank und kann:
+<ul>
+    <li>Ihre Fragen beantworten;</li>
+    <li>Produkte aus der Datenbank vorschlagen;</li>
+    <li>natürliche Gespräche per Sprache oder Text führen.</li>
+</ul>
+</p>
+
+<p>
+📌 <strong>Drücken und halten Sie den Mikrofon-Button</strong> – die Aufnahme beginnt.<br>
+<strong>Lassen Sie die Taste los</strong> – Ihre Nachricht wird automatisch an den Assistenten gesendet.<br>
+Die maximale Aufnahmedauer beträgt standardmäßig <strong>30 Sekunden</strong>, kann jedoch nach Bestellung erhöht werden.
+</p>
+
+<p>
+Dies ist eine <em>Demoversion</em> davon, wie der Assistent auf Ihrer Website aussehen wird.
+</p>
+
+<hr>
+
+<h3>🔧 Was Sie nach der Bestellung erhalten:</h3>
+<ul>
+    <li>einen Assistenten mit Wissen über Ihr Unternehmen;</li>
+    <li>ein persönliches Dashboard zur Verwaltung der Funktionen;</li>
+    <li>die Möglichkeit:
+        <ul>
+            <li>die Gesprächshistorie der Nutzer einzusehen;</li>
+            <li>GPT-Anweisungen zu bearbeiten;</li>
+            <li>Ihre Wissensdatenbank hochzuladen oder zu aktualisieren;</li>
+            <li>den Betriebsmodus auszuwählen (nur Sprache oder Sprache + Chat);</li>
+            <li>zu testen, wie der Assistent Kunden berät.</li>
+        </ul>
+    </li>
+</ul>
+
+<div id="chat-box"></div>
+<script src="/static/voice-widget.js"></script>
+{% endblock %}

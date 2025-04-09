@@ -1,10 +1,10 @@
-<!-- templates/base.html -->
+<!-- templates/base_en.html -->
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Асистент Rozum{% endblock %}</title>
+  <title>{% block title %}Rozum Assistant{% endblock %}</title>
   <link rel="stylesheet" href="/static/styles.css">
   <style>
     html, body {
@@ -67,7 +67,7 @@
 <body>
   <header>
     <div class="left">
-      <a href="/">🏠 На головну</a>
+      <a href="/">🏠 Home</a>
     </div>
     <div class="right">
       <a href="https://t.me/rozum_support" target="_blank">Telegram</a>
@@ -82,7 +82,7 @@
   </header>
 
   <div class="top-buttons">
-    <a href="/login">🔐 Вхід до кабінету</a>
+    <a href="/login">🔐 Admin Login</a>
   </div>
 
   <main>
@@ -90,15 +90,15 @@
   </main>
 
   <footer>
-    <a href="/privacy">Політика конфіденційності</a> |
-    <a href="/impressum">Impressum</a> |
-    <a href="/contact">Контакти</a>
+    <a href="/privacy">Privacy Policy</a> |
+    <a href="/impressum">Legal Notice</a> |
+    <a href="/contact">Contact</a>
   </footer>
 
   <script>
-    const selectedLang = localStorage.getItem("site_lang") || navigator.language.slice(0, 2) || "uk";
+    const selectedLang = localStorage.getItem("site_lang") || navigator.language.slice(0, 2) || "en";
     const allowed = ["uk", "en", "de"];
-    const lang = allowed.includes(selectedLang) ? selectedLang : "uk";
+    const lang = allowed.includes(selectedLang) ? selectedLang : "en";
 
     document.cookie = `site_lang=${lang}; path=/`;
     localStorage.setItem("site_lang", lang);

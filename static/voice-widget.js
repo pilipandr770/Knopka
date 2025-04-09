@@ -1,21 +1,28 @@
-// Файл: static/voice-widget.js
+// 📁 static/voice-widget.js (оновлений файл з підтримкою режимів)
 
 let mediaRecorder;
 let audioChunks = [];
 let isRecording = false;
 let autoplay = true;
 let recordTimeout;
+let interactionMode = "voice+chat"; // за замовчуванням
 
-const chatBox = document.createElement("div");
-chatBox.id = "chat-box";
-document.body.appendChild(chatBox);
+const floatingChat = document.createElement("div");
+floatingChat.id = "floating-chat";
+floatingChat.style.display = "none";
+floatingChat.innerHTML = `
+  <div id="chat-box"></div>
+  <button onclick="document.getElementById('floating-chat').style.display='none'">❌</button>
+`;
+document.body.appendChild(floatingChat);
 
 function appendMessage(text, isUser = false) {
+    if (interactionMode !== "voice+chat") return;
     const msg = document.createElement("div");
     msg.className = isUser ? "chat-message user" : "chat-message assistant";
     msg.textContent = text;
-    chatBox.appendChild(msg);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    document.getElementById("chat-box").appendChild(msg);
+    document.getElementById("chat-box").scrollTop = 999999;
 }
 
 function appendAudioPlayer(audioUrl, label) {
@@ -32,12 +39,12 @@ function appendAudioPlayer(audioUrl, label) {
 
     container.appendChild(labelEl);
     container.appendChild(audio);
-    chatBox.appendChild(container);
-    chatBox.scrollTop = chatBox.scrollHeight;
 
-    if (autoplay) {
-        audio.play().catch(e => console.log("🔇 Автовідтворення заборонено браузером:", e));
+    if (interactionMode === "voice+chat") {
+        document.getElementById("chat-box").appendChild(container);
     }
+
+    if (autoplay) audio.play().catch(() => {});
 }
 
 function sendRecording() {
@@ -49,7 +56,9 @@ function sendRecording() {
     localStorage.setItem("client_id", clientId);
     formData.append("client_id", clientId);
 
-    appendMessage("🎤 Повідомлення відправлено", true);
+    if (interactionMode === "voice+chat") {
+        appendMessage("🎤 Повідомлення відправлено", true);
+    }
 
     fetch("/process_audio", {
         method: "POST",
@@ -57,18 +66,14 @@ function sendRecording() {
     }).then(async response => {
         const audioBlob = await response.blob();
         const audioUrl = URL.createObjectURL(audioBlob);
-
         const assistantText = decodeURIComponent(response.headers.get("X-Assistant-Answer") || "🤖 Немає відповіді");
         const userText = decodeURIComponent(response.headers.get("X-User-Text") || "");
 
-        if (userText && userText !== "🎤 Повідомлення відправлено") {
+        if (userText && interactionMode === "voice+chat") {
             appendMessage(userText, true);
         }
 
         appendAudioPlayer(audioUrl, assistantText);
-    }).catch(error => {
-        console.error("Помилка:", error);
-        appendMessage("⚠️ Помилка при надсиланні аудіо", false);
     });
 }
 
@@ -82,28 +87,20 @@ function startRecording() {
         mediaRecorder.start();
         audioChunks = [];
 
-        mediaRecorder.addEventListener("dataavailable", event => {
-            audioChunks.push(event.data);
-        });
-
+        mediaRecorder.addEventListener("dataavailable", event => audioChunks.push(event.data));
         mediaRecorder.addEventListener("stop", () => {
             isRecording = false;
             recordButton.classList.remove("recording");
             sendRecording();
         });
 
-        // ⏱ Обмеження по часу — максимум 30 секунд
         recordTimeout = setTimeout(() => {
-            if (isRecording) {
-                console.log("⏰ Автоматичне завершення через 30 сек");
-                stopRecording();
-            }
+            if (isRecording) stopRecording();
         }, 30000);
-    }).catch(err => {
-        console.error("🎙️ Доступ до мікрофона заборонено:", err);
-        appendMessage("❌ Не вдалося отримати доступ до мікрофона", true);
-        isRecording = false;
-        recordButton.classList.remove("recording");
+
+        if (interactionMode === "voice+chat") {
+            floatingChat.style.display = "flex";
+        }
     });
 }
 
@@ -117,21 +114,17 @@ function stopRecording() {
     }
 }
 
-// 🎤 Кнопка мікрофона
 const recordButton = document.createElement("button");
 recordButton.className = "voice-button";
 recordButton.innerHTML = "🎤";
 recordButton.title = "Утримуй, щоб записати (до 30 сек)";
 document.body.appendChild(recordButton);
-
-// 👉 Події натискання й утримання
 recordButton.addEventListener("mousedown", startRecording);
 recordButton.addEventListener("touchstart", startRecording);
 recordButton.addEventListener("mouseup", stopRecording);
 recordButton.addEventListener("mouseleave", stopRecording);
 recordButton.addEventListener("touchend", stopRecording);
 
-// 🎚️ Перемикач автовідтворення
 const autoplayToggle = document.createElement("label");
 autoplayToggle.className = "autoplay-toggle";
 autoplayToggle.innerHTML = `
@@ -142,3 +135,7 @@ document.body.appendChild(autoplayToggle);
 document.getElementById("autoplay-check").addEventListener("change", e => {
     autoplay = e.target.checked;
 });
+
+fetch("/static/widget_settings.json")
+  .then(r => r.json())
+  .then(cfg => interactionMode = cfg.interaction_mode || "voice+chat");

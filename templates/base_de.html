@@ -1,10 +1,10 @@
-<!-- templates/base.html -->
+<!-- templates/base_de.html -->
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Асистент Rozum{% endblock %}</title>
+  <title>{% block title %}Rozum Assistent{% endblock %}</title>
   <link rel="stylesheet" href="/static/styles.css">
   <style>
     html, body {
@@ -67,12 +67,12 @@
 <body>
   <header>
     <div class="left">
-      <a href="/">🏠 На головну</a>
+      <a href="/">🏠 Startseite</a>
     </div>
     <div class="right">
       <a href="https://t.me/rozum_support" target="_blank">Telegram</a>
       <a href="https://facebook.com/rozum.ai" target="_blank">Facebook</a>
-      <a href="mailto:info@rozum.ai">Email</a>
+      <a href="mailto:info@rozum.ai">E-Mail</a>
       <select id="lang-switcher" style="padding: 6px 10px; border-radius: 6px; border: none; font-weight: bold; background: #fff; cursor: pointer;">
         <option value="uk">🇺🇦 UA</option>
         <option value="en">🇬🇧 EN</option>
@@ -82,7 +82,7 @@
   </header>
 
   <div class="top-buttons">
-    <a href="/login">🔐 Вхід до кабінету</a>
+    <a href="/login">🔐 Adminbereich</a>
   </div>
 
   <main>
@@ -90,15 +90,15 @@
   </main>
 
   <footer>
-    <a href="/privacy">Політика конфіденційності</a> |
+    <a href="/privacy">Datenschutzerklärung</a> |
     <a href="/impressum">Impressum</a> |
-    <a href="/contact">Контакти</a>
+    <a href="/contact">Kontakt</a>
   </footer>
 
   <script>
-    const selectedLang = localStorage.getItem("site_lang") || navigator.language.slice(0, 2) || "uk";
+    const selectedLang = localStorage.getItem("site_lang") || navigator.language.slice(0, 2) || "de";
     const allowed = ["uk", "en", "de"];
-    const lang = allowed.includes(selectedLang) ? selectedLang : "uk";
+    const lang = allowed.includes(selectedLang) ? selectedLang : "de";
 
     document.cookie = `site_lang=${lang}; path=/`;
     localStorage.setItem("site_lang", lang);

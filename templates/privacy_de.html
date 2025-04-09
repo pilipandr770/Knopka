@@ -1,0 +1,54 @@
+<!-- 📁 templates/privacy_de.html -->
+{% extends "base_de.html" %}
+{% block title %}Datenschutzerklärung{% endblock %}
+{% block content %}
+<h2>Datenschutzerklärung</h2>
+
+<p>Wir, das Team von "Rozum", respektieren Ihre Privatsphäre und halten uns an die EU-Datenschutz-Grundverordnung (DSGVO) sowie an nationale Gesetze.</p>
+
+<h3>1. Allgemeine Informationen</h3>
+<p>Diese Website ist ein Demonstrationsbeispiel für die Integration eines Sprachassistenten mit OpenAI. Wir erheben keine personenbezogenen Daten ohne Ihre ausdrückliche Zustimmung.</p>
+
+<h3>2. Welche Daten wir verarbeiten</h3>
+<ul>
+  <li><b>Audio</b>: Ihre Sprachaufnahme wird über OpenAI Whisper transkribiert.</li>
+  <li><b>Client ID</b>: Eine eindeutige Kennung wird lokal in Ihrem Browser gespeichert und zur Anzeige Ihrer Gesprächshistorie verwendet.</li>
+  <li><b>Texteingaben</b>: Die Texte werden zur Verarbeitung an OpenAI gesendet, um die Funktionalität des GPT-Assistenten zu ermöglichen.</li>
+</ul>
+<p>Diese Daten werden nicht für Profiling oder Marketing verwendet.</p>
+
+<h3>3. Technologien und Drittanbieter</h3>
+<p>Wir verwenden folgende Technologien zur Umsetzung der Funktionen:</p>
+<ul>
+  <li><b>OpenAI API</b>: für Transkription, Antwortgenerierung und Sprachausgabe (TTS).</li>
+  <li><b>LocalStorage</b>: zur Speicherung der client_id in Ihrem Browser.</li>
+</ul>
+<p>Daten können über OpenAI in die USA übertragen werden. Wir verlassen uns auf Standardvertragsklauseln (SCC) gemäß Art. 46 DSGVO.</p>
+
+<h3>4. Cookies</h3>
+<p>Wir verwenden keine Werbe- oder Analyse-Cookies. Wenn künftig ein Cookie-Banner hinzugefügt wird, können Sie Ihre Einstellungen selbst wählen.</p>
+
+<h3>5. Ihre Rechte</h3>
+<p>Sie haben folgende Rechte:</p>
+<ul>
+  <li>Recht auf Auskunft über Ihre Daten (Art. 15 DSGVO)</li>
+  <li>Recht auf Berichtigung/Löschung (Art. 16, 17 DSGVO)</li>
+  <li>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO)</li>
+  <li>Widerspruchsrecht (Art. 21 DSGVO)</li>
+  <li>Beschwerderecht bei einer Aufsichtsbehörde (z. B. Der Hessische Beauftragte für Datenschutz und Informationsfreiheit)</li>
+</ul>
+
+<h3>6. Kontakt</h3>
+<p>Verantwortliche Stelle:</p>
+<p>
+Rozum GmbH<br>
+AI-Straße 123, Kiew, Ukraine<br>
+E-Mail: <a href="mailto:info@rozum.ai">info@rozum.ai</a>
+</p>
+
+<h3>7. Änderungen</h3>
+<p>Wir behalten uns das Recht vor, diese Datenschutzerklärung zu ändern. Aktualisierungen werden auf dieser Seite veröffentlicht.</p>
+
+<hr>
+<p>Letzte Aktualisierung: 2025-04-09</p>
+{% endblock %}

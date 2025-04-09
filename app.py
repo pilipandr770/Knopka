@@ -28,21 +28,110 @@ if os.path.exists(DIALOGUES_FILE):
 else:
     dialogues = {}
 
+# 🌍 Отримати мову з cookie
+def get_lang():
+    lang = request.cookies.get("site_lang", "uk")
+    return lang if lang in ["uk", "en", "de"] else "uk"
+
+# 📄 Вибрати шаблон залежно від мови
+def t(name, **kwargs):
+    lang = get_lang()
+    template = f"{name}.html" if lang == "uk" else f"{name}_{lang}.html"
+    return render_template(template, **kwargs)
+
+# 🌐 Головна сторінка
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return t("index")
 
 @app.route("/privacy")
 def privacy():
-    return render_template("privacy.html")
+    return t("privacy")
 
 @app.route("/impressum")
 def impressum():
-    return render_template("impressum.html")
+    return t("impressum")
 
 @app.route("/contact")
 def contact():
-    return render_template("contact.html")
+    return t("contact")
+
+@app.route("/dashboard")
+@require_login
+def dashboard():
+    return t("dashboard", dialogues=dialogues)
+
+@app.route("/instructions", methods=["GET", "POST"])
+@require_login
+def instructions():
+    instruction_file = "storage/instructions.txt"
+    content = ""
+    message = None
+
+    if request.method == "POST":
+        content = request.form.get("instructions", "")
+        with open(instruction_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        message = {
+            "uk": "Інструкції оновлено успішно!",
+            "en": "Instructions updated successfully!",
+            "de": "Anweisungen erfolgreich gespeichert!"
+        }.get(get_lang(), "Done")
+
+    elif os.path.exists(instruction_file):
+        with open(instruction_file, "r", encoding="utf-8") as f:
+            content = f.read()
+
+    return t("instructions", content=content, message=message)
+
+@app.route("/upload_knowledge", methods=["GET", "POST"])
+@require_login
+def upload_knowledge():
+    message = None
+    if request.method == "POST":
+        file = request.files.get("file")
+        if file:
+            filename = secure_filename(file.filename)
+            save_path = os.path.join("storage", "knowledgebase", filename)
+            file.save(save_path)
+            message = {
+                "uk": f"Файл '{filename}' успішно завантажено!",
+                "en": f"File '{filename}' uploaded successfully!",
+                "de": f"Datei '{filename}' erfolgreich hochgeladen!"
+            }.get(get_lang(), "Done")
+    return t("upload_knowledge", message=message)
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session["logged_in"] = True
+            return redirect(url_for("dashboard"))
+        else:
+            error = {
+                "uk": "Невірний логін або пароль",
+                "en": "Invalid username or password",
+                "de": "Falscher Benutzername oder Passwort"
+            }.get(get_lang(), "Login failed")
+    return t("login", error=error)
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+@app.route("/set_widget_settings", methods=["POST"])
+@require_login
+def set_widget_settings():
+    interaction_mode = request.form.get("interaction_mode", "voice+chat")
+    settings_path = "static/widget_settings.json"
+    settings = {"interaction_mode": interaction_mode}
+    with open(settings_path, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+    return redirect(url_for("dashboard"))
 
 @app.route("/process_audio", methods=["POST"])
 def process_audio():
@@ -87,7 +176,6 @@ def process_audio():
         assistant_id=ASSISTANT_ID
     )
 
-    # 🧠 Обробка функцій
     while True:
         status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
@@ -170,66 +258,6 @@ def process_audio():
     response.headers["X-User-Text"] = quote(user_message)
 
     return response
-
-# 🔐 Авторизація, інструкції, кабінет — залишились без змін нижче...
-
-# (не дублюю решту — у тебе все там правильно 👌)
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    error = None
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            session["logged_in"] = True
-            return redirect(url_for("dashboard"))
-        else:
-            error = "Невірний логін або пароль"
-    return render_template("login.html", error=error)
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-@app.route("/upload_knowledge", methods=["GET", "POST"])
-@require_login
-def upload_knowledge():
-    message = None
-    if request.method == "POST":
-        file = request.files.get("file")
-        if file:
-            filename = secure_filename(file.filename)
-            save_path = os.path.join("storage", "knowledgebase", filename)
-            file.save(save_path)
-            message = f"Файл '{filename}' успішно завантажено!"
-    return render_template("upload_knowledge.html", message=message)
-
-@app.route("/dashboard")
-@require_login
-def dashboard():
-    return render_template("dashboard.html", dialogues=dialogues)
-
-@app.route("/instructions", methods=["GET", "POST"])
-@require_login
-def instructions():
-    instruction_file = "storage/instructions.txt"
-    content = ""
-    message = None
-
-    if request.method == "POST":
-        content = request.form.get("instructions", "")
-        with open(instruction_file, "w", encoding="utf-8") as f:
-            f.write(content)
-        message = "Інструкції оновлено успішно!"
-
-    elif os.path.exists(instruction_file):
-        with open(instruction_file, "r", encoding="utf-8") as f:
-            content = f.read()
-
-    return render_template("instructions.html", content=content, message=message)
 
 if __name__ == "__main__":
     app.run(debug=True)

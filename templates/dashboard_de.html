@@ -1,21 +1,21 @@
-<!-- 📁 Файл: templates/dashboard.html -->
-{% extends "base.html" %}
-{% block title %}Діалоги клієнтів{% endblock %}
+<!-- 📁 templates/dashboard_de.html -->
+{% extends "base_de.html" %}
+{% block title %}Kundendialoge{% endblock %}
 {% block content %}
 <div class="top-bar">
-    <h2>Історія діалогів</h2>
-    <a href="/instructions">✏️ Інструкції для асистента</a>
+    <h2>Verlauf der Gespräche</h2>
+    <a href="/instructions">✏️ Anweisungen für Assistenten</a>
 </div>
 
 <form method="POST" action="/set_widget_settings" style="text-align: center; margin: 20px 0;">
     <h3 style="color: #2c3e50; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        ⚙️ Налаштування віджету
+        ⚙️ Widget-Einstellungen
     </h3>
 
-    <label style="font-weight: bold; font-size: 16px;">🎛 Оберіть режим взаємодії:</label><br>
+    <label style="font-weight: bold; font-size: 16px;">🎛 Wählen Sie den Interaktionsmodus:</label><br>
     <select name="interaction_mode" style="margin: 10px auto; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px;">
-        <option value="voice-only">🎤 Лише голос</option>
-        <option value="voice+chat">🎤 + 💬 Голос + чат</option>
+        <option value="voice-only">🎤 Nur Sprache</option>
+        <option value="voice+chat">🎤 + 💬 Sprache + Chat</option>
     </select><br><br>
 
     <button type="submit" style="
@@ -29,17 +29,17 @@
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         transition: background-color 0.3s ease;
     ">
-        📁 Зберегти
+        📁 Speichern
     </button>
 </form>
 
 {% for client_id, logs in dialogues.items() %}
-    <h3>Клієнт: {{ client_id }}</h3>
+    <h3>Kunde: {{ client_id }}</h3>
     <ul>
     {% for entry in logs %}
         <li>
             <b>{{ entry.timestamp }}:</b><br>
-            <i>Q:</i> {{ entry.question }}<br>
+            <i>F:</i> {{ entry.question }}<br>
             <i>A:</i> {{ entry.answer }}
         </li>
     {% endfor %}
