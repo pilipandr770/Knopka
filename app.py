@@ -9,12 +9,13 @@ import json
 import time
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from urllib.parse import quote
 from utils.auth import is_logged_in, require_login, ADMIN_USERNAME, ADMIN_PASSWORD
 from utils.vector_store import search_knowledgebase
+from utils.products import get_product_info, add_product, list_all_products
+from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
 from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE
-from urllib.parse import quote
 
-# Ініціалізація Flask
 app = Flask(__name__)
 CORS(app)
 openai.api_key = OPENAI_API_KEY
@@ -31,6 +32,18 @@ else:
 def index():
     return render_template("index.html")
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+@app.route("/impressum")
+def impressum():
+    return render_template("impressum.html")
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html")
+
 @app.route("/process_audio", methods=["POST"])
 def process_audio():
     if "file" not in request.files or "client_id" not in request.form:
@@ -39,7 +52,6 @@ def process_audio():
     audio_file = request.files["file"]
     client_id = request.form["client_id"]
 
-    # Збереження тимчасового аудіо
     with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
         audio_file.save(tmp.name)
         with open(tmp.name, "rb") as f:
@@ -50,7 +62,6 @@ def process_audio():
     os.remove(tmp.name)
     user_message = transcription.text
 
-    # 📖 Зчитування інструкції
     instruction_path = "storage/instructions.txt"
     if os.path.exists(instruction_path):
         with open(instruction_path, "r", encoding="utf-8") as f:
@@ -58,7 +69,6 @@ def process_audio():
     else:
         assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
 
-    # 🔍 Додаємо інструкцію + контекст із бази знань
     knowledge = search_knowledgebase(user_message)
     full_message = (
         f"📌 Інструкція:\n{assistant_instructions}\n\n"
@@ -66,7 +76,6 @@ def process_audio():
         f"🗣️ Питання користувача:\n{user_message}"
     )
 
-    # GPT Thread
     thread = openai.beta.threads.create()
     openai.beta.threads.messages.create(
         thread_id=thread.id,
@@ -78,18 +87,61 @@ def process_audio():
         assistant_id=ASSISTANT_ID
     )
 
+    # 🧠 Обробка функцій
     while True:
         status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+
         if status.status == "completed":
             break
+        elif status.status == "requires_action":
+            tool_outputs = []
+            for tool_call in status.required_action.submit_tool_outputs.tool_calls:
+                func_name = tool_call.function.name
+                args = json.loads(tool_call.function.arguments)
+                print(f"🔧 Виклик функції: {func_name}")
+                print(f"📥 Аргументи: {json.dumps(args, ensure_ascii=False, indent=2)}")
+
+                try:
+                    if func_name == "get_product_info":
+                        result = get_product_info(**args)
+                    elif func_name == "add_product":
+                        result = add_product(**args)
+                    elif func_name == "create_calendar_event":
+                        result = create_calendar_event(**args)
+                        result += "\n\n⚠️ Це тестова подія. Для підтвердження зв'яжіться з представником."
+                    elif func_name == "list_calendar_events":
+                        result = list_calendar_events()
+                    elif func_name == "list_all_products":
+                        result = list_all_products()
+                    elif func_name == "find_free_slots":
+                        result = find_free_slots(**args)
+                    else:
+                        result = f"❌ Невідома функція: {func_name}"
+
+                    print(f"✅ Результат функції:\n{result}\n{'-'*40}")
+                    tool_outputs.append({
+                        "tool_call_id": tool_call.id,
+                        "output": result
+                    })
+                except Exception as e:
+                    tool_outputs.append({
+                        "tool_call_id": tool_call.id,
+                        "output": f"❌ Помилка при виконанні: {str(e)}"
+                    })
+
+            openai.beta.threads.runs.submit_tool_outputs(
+                thread_id=thread.id,
+                run_id=run.id,
+                tool_outputs=tool_outputs
+            )
         elif status.status == "failed":
             return jsonify({"error": "Assistant failed"}), 500
+
         time.sleep(1)
 
     messages = openai.beta.threads.messages.list(thread_id=thread.id)
     answer = messages.data[0].content[0].text.value
 
-    # TTS (новий синтаксис)
     speech_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     tts_response = openai.audio.speech.create(
         model="tts-1",
@@ -99,7 +151,6 @@ def process_audio():
     with open(speech_file_path, "wb") as out:
         out.write(tts_response.content)
 
-    # Збереження діалогу
     log_entry = {
         "timestamp": datetime.utcnow().isoformat(),
         "question": user_message,
@@ -114,14 +165,17 @@ def process_audio():
     with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
         json.dump(dialogues, f, indent=2, ensure_ascii=False)
 
-    # Відповідь (mp3 + заголовки з текстом)
     response = make_response(send_file(speech_file_path, mimetype="audio/mpeg"))
     response.headers["X-Assistant-Answer"] = quote(answer)
     response.headers["X-User-Text"] = quote(user_message)
 
     return response
 
-# 🔐 Авторизація
+# 🔐 Авторизація, інструкції, кабінет — залишились без змін нижче...
+
+# (не дублюю решту — у тебе все там правильно 👌)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     error = None
@@ -140,7 +194,6 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-# 📚 Завантаження бази знань
 @app.route("/upload_knowledge", methods=["GET", "POST"])
 @require_login
 def upload_knowledge():
@@ -154,13 +207,11 @@ def upload_knowledge():
             message = f"Файл '{filename}' успішно завантажено!"
     return render_template("upload_knowledge.html", message=message)
 
-# 📋 Перегляд діалогів
 @app.route("/dashboard")
 @require_login
 def dashboard():
     return render_template("dashboard.html", dialogues=dialogues)
 
-# 📘 Інструкції асистента
 @app.route("/instructions", methods=["GET", "POST"])
 @require_login
 def instructions():
@@ -180,8 +231,5 @@ def instructions():
 
     return render_template("instructions.html", content=content, message=message)
 
-
-# 🚀 Запуск
 if __name__ == "__main__":
-
     app.run(debug=True)

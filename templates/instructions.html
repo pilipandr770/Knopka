@@ -1,17 +1,12 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <title>Інструкції для асистента</title>
-</head>
-<body>
-    <h2>Інструкції для асистента</h2>
-    <form method="POST">
-        <textarea name="instructions" rows="10" cols="80">{{ content }}</textarea><br><br>
-        <button type="submit">💾 Зберегти</button>
-    </form>
-    {% if message %}
-        <p style="color: green">{{ message }}</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Інструкції для асистента{% endblock %}
+{% block content %}
+<h2>Інструкції для асистента</h2>
+<form method="POST">
+    <textarea name="instructions" rows="10" cols="80">{{ content }}</textarea><br><br>
+    <button type="submit">💾 Зберегти</button>
+</form>
+{% if message %}
+    <p style="color: green">{{ message }}</p>
+{% endif %}
+{% endblock %}

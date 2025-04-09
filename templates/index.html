@@ -1,49 +1,8 @@
-<!-- templates/index.html -->
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-    <meta charset="UTF-8">
-    <title>Voice Assistant</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        #chat-box {
-            max-height: 60vh;
-            overflow-y: auto;
-            background: white;
-            border-radius: 8px;
-            padding: 12px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .message {
-            padding: 8px 12px;
-            border-radius: 6px;
-            max-width: 75%;
-            font-size: 15px;
-            line-height: 1.4;
-        }
-        .user {
-            align-self: flex-end;
-            background-color: #d4fcd4;
-        }
-        .bot {
-            align-self: flex-start;
-            background-color: #f0f0f0;
-        }
-    </style>
-</head>
-<body>
-    <h1>🎙️ Голосовий Асистент</h1>
-    <p>Це демонстраційна сторінка. Натисніть мікрофон, щоб розпочати діалог.</p>
-
-    <!-- 🔐 Кнопка входу -->
-    <a href="/login" class="admin-login-button">🔐 Вхід до кабінету</a>
-
-    <div id="chat-box"></div>
-
-    <script src="/static/voice-widget.js"></script>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Голосовий Асистент{% endblock %}
+{% block content %}
+<h1>🎙️ Голосовий Асистент</h1>
+<p>Це демонстраційна сторінка. Натисніть мікрофон, щоб розпочати діалог.</p>
+<div id="chat-box"></div>
+<script src="/static/voice-widget.js"></script>
+{% endblock %}
