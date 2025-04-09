@@ -1,0 +1,13 @@
+# 📁 render.yaml
+services:
+  - type: web
+    name: rozum-assistant
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.10
