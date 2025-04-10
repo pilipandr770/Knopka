@@ -1,4 +1,4 @@
-// 📁 static/voice-widget.js (працююча фінальна версія)
+// 📁 static/voice-widget.js
 
 document.addEventListener("DOMContentLoaded", () => {
     let mediaRecorder;
@@ -112,6 +112,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (interactionMode === "voice+chat") {
                 floatingChat.style.display = "flex";
             }
+        }).catch(err => {
+            console.warn("🎙️ Доступ до мікрофону не отримано:", err);
+            fallbackToTextMode();
         });
     }
 
@@ -151,21 +154,15 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(r => r.json())
       .then(cfg => interactionMode = cfg.interaction_mode || "voice+chat");
 
-    // 🧠 Перевірка підтримки MediaRecorder
-    if (typeof MediaRecorder === "undefined") {
-        console.warn("⚠️ MediaRecorder не підтримується. Вмикаємо текстовий режим.");
-
-        // Показати чат
+    // 🔄 Перехід у текстовий режим
+    function fallbackToTextMode() {
         floatingChat.style.display = "flex";
         interactionMode = "voice+chat";
-
-        // Показати повідомлення асистента
         appendMessage(
             "🤖 Вибачте, ваш пристрій не підтримує голосовий запис (наприклад, Safari на iPhone/iPad).\n" +
             "Але я можу відповісти вам у чаті. Напишіть запит нижче!"
         );
 
-        // Додати текстове поле та кнопку
         const textInputContainer = document.createElement("div");
         textInputContainer.className = "text-input-container";
         textInputContainer.innerHTML = `
@@ -174,7 +171,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         floatingChat.appendChild(textInputContainer);
 
-        // Обробка відправлення тексту
         document.getElementById("send-text").addEventListener("click", () => {
             const text = document.getElementById("text-input").value.trim();
             if (!text) return;
@@ -200,5 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             document.getElementById("text-input").value = "";
         });
+    }
+
+    if (typeof MediaRecorder === "undefined") {
+        console.warn("⚠️ MediaRecorder не підтримується.");
+        fallbackToTextMode();
     }
 });
