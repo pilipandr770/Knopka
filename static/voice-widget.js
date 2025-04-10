@@ -140,6 +140,14 @@ document.getElementById("autoplay-check").addEventListener("change", e => {
     autoplay = e.target.checked;
 });
 
+    if (audioBlob.size < 1000) {
+    alert("⚠️ Помилка: аудіо занадто коротке або порожнє. Спробуйте ще раз.");
+    return;
+}
+
+console.log("📦 Audio blob:", audioBlob);
+console.log("📏 Розмір blob:", audioBlob.size);
+
 fetch("/static/widget_settings.json")
   .then(r => r.json())
   .then(cfg => interactionMode = cfg.interaction_mode || "voice+chat");
