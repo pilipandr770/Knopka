@@ -138,7 +138,6 @@ def set_widget_settings():
 @app.route("/process_audio", methods=["POST"])
 def process_audio():
     try:
-        # Заміна перевірки контенту на безпечнішу:
         if request.is_json:
             data = request.get_json(silent=True) or {}
             user_text = data.get("text", "").strip()
@@ -157,7 +156,8 @@ def process_audio():
         with open(temp_filename, "rb") as f:
             transcription = openai.audio.transcriptions.create(
                 model="whisper-1",
-                file=f
+                file=f,
+                response_format="json"
             )
 
         os.remove(temp_filename)

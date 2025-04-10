@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     floatingChat.style.display = "none";
     floatingChat.innerHTML = `
       <div id="chat-box"></div>
+      <input id="chat-input" type="text" placeholder="Напишіть повідомлення..." />
       <button onclick="document.getElementById('floating-chat').style.display='none'">❌</button>
     `;
     document.body.appendChild(floatingChat);
@@ -47,14 +48,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function sendRecording() {
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" });
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
         if (audioBlob.size < 1000) {
             alert("⚠️ Помилка: аудіо занадто коротке або порожнє. Спробуйте ще раз.");
             return;
         }
 
         const formData = new FormData();
-        formData.append("file", audioBlob, "recording.webm");
+        formData.append("audio", audioBlob, "recording.webm");
 
         const clientId = localStorage.getItem("client_id") || Math.random().toString(36).substring(2);
         localStorage.setItem("client_id", clientId);
@@ -65,19 +66,22 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch(`${baseUrl}/process_audio`, {
             method: "POST",
             body: formData
-        }).then(async response => {
-            const audioBlob = await response.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const assistantText = decodeURIComponent(response.headers.get("X-Assistant-Answer") || "🤖 Немає відповіді");
-            const userText = decodeURIComponent(response.headers.get("X-User-Text") || "");
-            if (userText) {
-                appendMessage(userText, true);
+        }).then(res => res.json()).then(data => {
+            if (data.response) {
+                appendMessage(data.response);
+            } else {
+                appendMessage("⚠️ Відповідь відсутня.");
             }
-            appendAudioPlayer(audioUrl, assistantText);
         }).catch(err => {
             console.error("❌ Помилка при відправці аудіо:", err);
             appendMessage("⚠️ Помилка з'єднання з сервером", false);
         });
+    }
+
+    function fallbackToChat() {
+        interactionMode = "voice+chat";
+        floatingChat.style.display = "flex";
+        appendMessage("😔 На жаль, ваш пристрій не підтримує запис аудіо. Ви можете продовжити спілкування в текстовому чаті.");
     }
 
     function startRecording() {
@@ -103,7 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             floatingChat.style.display = "flex";
         }).catch(err => {
-            console.error("Error accessing microphone:", err);
+            console.error("🎤 Мікрофон недоступний:", err);
+            fallbackToChat();
         });
     }
 
@@ -139,7 +144,26 @@ document.addEventListener("DOMContentLoaded", () => {
         autoplay = e.target.checked;
     });
 
+    document.getElementById("chat-input").addEventListener("keypress", e => {
+        if (e.key === "Enter") {
+            const text = e.target.value.trim();
+            if (text) {
+                appendMessage(text, true);
+                fetch("/process_text", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text, client_id: localStorage.getItem("client_id") })
+                }).then(r => r.json()).then(data => {
+                    appendMessage(data.answer || "🤖 Відповідь відсутня");
+                }).catch(() => {
+                    appendMessage("⚠️ Сервер недоступний");
+                });
+                e.target.value = "";
+            }
+        }
+    });
+
     fetch("/static/widget_settings.json")
-      .then(r => r.json())
-      .then(cfg => interactionMode = cfg.interaction_mode || "voice+chat");
+        .then(r => r.json())
+        .then(cfg => interactionMode = cfg.interaction_mode || "voice+chat");
 });
