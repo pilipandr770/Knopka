@@ -151,7 +151,7 @@ def process_audio():
     with open(tmp.name, "rb") as f:
         transcription = openai.audio.transcriptions.create(
             model="whisper-1",
-            file=("audio.webm", f, "audio/webm")
+            file=("audio.webm", audio_file.stream, "audio/webm")
         )
 
     os.remove(tmp.name)
