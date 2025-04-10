@@ -1,4 +1,4 @@
-// 📁 static/voice-widget.js (оновлений файл з підтримкою режимів)
+// 📁 static/voice-widget.js (з адаптивним fetch)
 
 let mediaRecorder;
 let audioChunks = [];
@@ -6,6 +6,7 @@ let isRecording = false;
 let autoplay = true;
 let recordTimeout;
 let interactionMode = "voice+chat"; // за замовчуванням
+const baseUrl = window.location.origin;
 
 const floatingChat = document.createElement("div");
 floatingChat.id = "floating-chat";
@@ -60,7 +61,7 @@ function sendRecording() {
         appendMessage("🎤 Повідомлення відправлено", true);
     }
 
-    fetch("/process_audio", {
+    fetch(`${baseUrl}/process_audio`, {
         method: "POST",
         body: formData
     }).then(async response => {
