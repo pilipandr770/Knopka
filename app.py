@@ -275,6 +275,67 @@ def process_audio():
     response.headers["Access-Control-Expose-Headers"] = "X-Assistant-Answer, X-User-Text"
     return response
 
+# Новий роут для текстових запитів
+@app.route("/process_text", methods=["POST"])
+def process_text():
+    data = request.get_json()
+    text = data.get("text", "")
+    client_id = data.get("client_id", "unknown")
+
+    if not text:
+        return jsonify({"error": "Порожній запит"}), 400
+
+    # Інструкція
+    instruction_path = "storage/instructions.txt"
+    if os.path.exists(instruction_path):
+        with open(instruction_path, "r", encoding="utf-8") as f:
+            assistant_instructions = f.read().strip()
+    else:
+        assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
+
+    knowledge = search_knowledgebase(text)
+    full_message = (
+        f"📌 Інструкція:\n{assistant_instructions}\n\n"
+        f"📚 Контекст із бази знань:\n{knowledge}\n\n"
+        f"🗣️ Питання користувача:\n{text}"
+    )
+
+    thread = openai.beta.threads.create()
+    openai.beta.threads.messages.create(
+        thread_id=thread.id,
+        role="user",
+        content=full_message
+    )
+    run = openai.beta.threads.runs.create(
+        thread_id=thread.id,
+        assistant_id=ASSISTANT_ID
+    )
+
+    while True:
+        status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+        if status.status == "completed":
+            break
+        time.sleep(1)
+
+    messages = openai.beta.threads.messages.list(thread_id=thread.id)
+    answer = messages.data[0].content[0].text.value.strip()
+
+    # Логування
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "question": text,
+        "answer": answer
+    }
+    if client_id in dialogues:
+        dialogues[client_id].append(log_entry)
+    else:
+        dialogues[client_id] = [log_entry]
+
+    with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
+        json.dump(dialogues, f, indent=2, ensure_ascii=False)
+
+    return jsonify({"answer": answer})
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
 

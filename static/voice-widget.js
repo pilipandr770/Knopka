@@ -1,151 +1,204 @@
 // 📁 static/voice-widget.js (працююча фінальна версія)
 
-let mediaRecorder;
-let audioChunks = [];
-let isRecording = false;
-let autoplay = true;
-let recordTimeout;
-let interactionMode = "voice+chat"; // за замовчуванням
-const baseUrl = window.location.origin;
+document.addEventListener("DOMContentLoaded", () => {
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let autoplay = true;
+    let recordTimeout;
+    let interactionMode = "voice+chat"; // за замовчуванням
+    const baseUrl = window.location.origin;
 
-const floatingChat = document.createElement("div");
-floatingChat.id = "floating-chat";
-floatingChat.style.display = "none";
-floatingChat.innerHTML = `
-  <div id="chat-box"></div>
-  <button onclick="document.getElementById('floating-chat').style.display='none'">❌</button>
-`;
-document.body.appendChild(floatingChat);
+    const floatingChat = document.createElement("div");
+    floatingChat.id = "floating-chat";
+    floatingChat.style.display = "none";
+    floatingChat.innerHTML = `
+      <div id="chat-box"></div>
+      <button onclick="document.getElementById('floating-chat').style.display='none'">❌</button>
+    `;
+    document.body.appendChild(floatingChat);
 
-function appendMessage(text, isUser = false) {
-    if (interactionMode !== "voice+chat") return;
-    const msg = document.createElement("div");
-    msg.className = isUser ? "chat-message user" : "chat-message assistant";
-    msg.textContent = text;
-    document.getElementById("chat-box").appendChild(msg);
-    document.getElementById("chat-box").scrollTop = 999999;
-}
-
-function appendAudioPlayer(audioUrl, label) {
-    const container = document.createElement("div");
-    container.className = "audio-container";
-
-    const labelEl = document.createElement("div");
-    labelEl.className = "audio-label";
-    labelEl.textContent = label;
-
-    const audio = document.createElement("audio");
-    audio.controls = true;
-    audio.src = audioUrl;
-
-    container.appendChild(labelEl);
-    container.appendChild(audio);
-
-    if (interactionMode === "voice+chat") {
-        document.getElementById("chat-box").appendChild(container);
+    function appendMessage(text, isUser = false) {
+        if (interactionMode !== "voice+chat") return;
+        const msg = document.createElement("div");
+        msg.className = isUser ? "chat-message user" : "chat-message assistant";
+        msg.textContent = text;
+        document.getElementById("chat-box").appendChild(msg);
+        document.getElementById("chat-box").scrollTop = 999999;
     }
 
-    if (autoplay) audio.play().catch(() => {});
-}
+    function appendAudioPlayer(audioUrl, label) {
+        const container = document.createElement("div");
+        container.className = "audio-container";
 
-function sendRecording() {
-    const audioBlob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" });
+        const labelEl = document.createElement("div");
+        labelEl.className = "audio-label";
+        labelEl.textContent = label;
 
-    if (audioBlob.size < 1000) {
-        alert("⚠️ Помилка: аудіо занадто коротке або порожнє. Спробуйте ще раз.");
-        return;
-    }
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.src = audioUrl;
 
-    const formData = new FormData();
-    formData.append("file", audioBlob, "recording.webm");
-
-    const clientId = localStorage.getItem("client_id") || Math.random().toString(36).substring(2);
-    localStorage.setItem("client_id", clientId);
-    formData.append("client_id", clientId);
-
-    if (interactionMode === "voice+chat") {
-        appendMessage("🎤 Повідомлення відправлено", true);
-    }
-
-    fetch(`${baseUrl}/process_audio`, {
-        method: "POST",
-        body: formData
-    }).then(async response => {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const assistantText = decodeURIComponent(response.headers.get("X-Assistant-Answer") || "🤖 Немає відповіді");
-        const userText = decodeURIComponent(response.headers.get("X-User-Text") || "");
-
-        if (userText && interactionMode === "voice+chat") {
-            appendMessage(userText, true);
-        }
-
-        appendAudioPlayer(audioUrl, assistantText);
-    }).catch(err => {
-        console.error("❌ Помилка при відправці аудіо:", err);
-        appendMessage("⚠️ Помилка з'єднання з сервером", false);
-    });
-}
-
-function startRecording() {
-    if (isRecording) return;
-    isRecording = true;
-    recordButton.classList.add("recording");
-
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.start();
-        audioChunks = [];
-
-        mediaRecorder.addEventListener("dataavailable", event => audioChunks.push(event.data));
-        mediaRecorder.addEventListener("stop", () => {
-            isRecording = false;
-            recordButton.classList.remove("recording");
-            sendRecording();
-        });
-
-        recordTimeout = setTimeout(() => {
-            if (isRecording) stopRecording();
-        }, 30000);
+        container.appendChild(labelEl);
+        container.appendChild(audio);
 
         if (interactionMode === "voice+chat") {
-            floatingChat.style.display = "flex";
+            document.getElementById("chat-box").appendChild(container);
         }
-    });
-}
 
-function stopRecording() {
-    if (!isRecording) return;
-    isRecording = false;
-    recordButton.classList.remove("recording");
-    clearTimeout(recordTimeout);
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
+        if (autoplay) audio.play().catch(() => {});
     }
-}
 
-const recordButton = document.createElement("button");
-recordButton.className = "voice-button";
-recordButton.innerHTML = "🎤";
-recordButton.title = "Утримуй, щоб записати (до 30 сек)";
-document.body.appendChild(recordButton);
-recordButton.addEventListener("mousedown", startRecording);
-recordButton.addEventListener("touchstart", startRecording);
-recordButton.addEventListener("mouseup", stopRecording);
-recordButton.addEventListener("mouseleave", stopRecording);
-recordButton.addEventListener("touchend", stopRecording);
+    function sendRecording() {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" });
 
-const autoplayToggle = document.createElement("label");
-autoplayToggle.className = "autoplay-toggle";
-autoplayToggle.innerHTML = `
-  <input type="checkbox" checked id="autoplay-check" />
-  🔊 Автовідтворення
-`;
-document.body.appendChild(autoplayToggle);
-document.getElementById("autoplay-check").addEventListener("change", e => {
-    autoplay = e.target.checked;
+        if (audioBlob.size < 1000) {
+            alert("⚠️ Помилка: аудіо занадто коротке або порожнє. Спробуйте ще раз.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", audioBlob, "recording.webm");
+
+        const clientId = localStorage.getItem("client_id") || Math.random().toString(36).substring(2);
+        localStorage.setItem("client_id", clientId);
+        formData.append("client_id", clientId);
+
+        if (interactionMode === "voice+chat") {
+            appendMessage("🎤 Повідомлення відправлено", true);
+        }
+
+        fetch(`${baseUrl}/process_audio`, {
+            method: "POST",
+            body: formData
+        }).then(async response => {
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const assistantText = decodeURIComponent(response.headers.get("X-Assistant-Answer") || "🤖 Немає відповіді");
+            const userText = decodeURIComponent(response.headers.get("X-User-Text") || "");
+
+            if (userText && interactionMode === "voice+chat") {
+                appendMessage(userText, true);
+            }
+
+            appendAudioPlayer(audioUrl, assistantText);
+        }).catch(err => {
+            console.error("❌ Помилка при відправці аудіо:", err);
+            appendMessage("⚠️ Помилка з'єднання з сервером", false);
+        });
+    }
+
+    function startRecording() {
+        if (isRecording) return;
+        isRecording = true;
+        recordButton.classList.add("recording");
+
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            audioChunks = [];
+
+            mediaRecorder.addEventListener("dataavailable", event => audioChunks.push(event.data));
+            mediaRecorder.addEventListener("stop", () => {
+                isRecording = false;
+                recordButton.classList.remove("recording");
+                sendRecording();
+            });
+
+            recordTimeout = setTimeout(() => {
+                if (isRecording) stopRecording();
+            }, 30000);
+
+            if (interactionMode === "voice+chat") {
+                floatingChat.style.display = "flex";
+            }
+        });
+    }
+
+    function stopRecording() {
+        if (!isRecording) return;
+        isRecording = false;
+        recordButton.classList.remove("recording");
+        clearTimeout(recordTimeout);
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+        }
+    }
+
+    const recordButton = document.createElement("button");
+    recordButton.className = "voice-button";
+    recordButton.innerHTML = "🎤";
+    recordButton.title = "Утримуй, щоб записати (до 30 сек)";
+    document.body.appendChild(recordButton);
+    recordButton.addEventListener("mousedown", startRecording);
+    recordButton.addEventListener("touchstart", startRecording);
+    recordButton.addEventListener("mouseup", stopRecording);
+    recordButton.addEventListener("mouseleave", stopRecording);
+    recordButton.addEventListener("touchend", stopRecording);
+
+    const autoplayToggle = document.createElement("label");
+    autoplayToggle.className = "autoplay-toggle";
+    autoplayToggle.innerHTML = `
+      <input type="checkbox" checked id="autoplay-check" />
+      🔊 Автовідтворення
+    `;
+    document.body.appendChild(autoplayToggle);
+    document.getElementById("autoplay-check").addEventListener("change", e => {
+        autoplay = e.target.checked;
+    });
+
+    fetch("/static/widget_settings.json")
+      .then(r => r.json())
+      .then(cfg => interactionMode = cfg.interaction_mode || "voice+chat");
+
+    // 🧠 Перевірка підтримки MediaRecorder
+    if (typeof MediaRecorder === "undefined") {
+        console.warn("⚠️ MediaRecorder не підтримується. Вмикаємо текстовий режим.");
+
+        // Показати чат
+        floatingChat.style.display = "flex";
+        interactionMode = "voice+chat";
+
+        // Показати повідомлення асистента
+        appendMessage(
+            "🤖 Вибачте, ваш пристрій не підтримує голосовий запис (наприклад, Safari на iPhone/iPad).\n" +
+            "Але я можу відповісти вам у чаті. Напишіть запит нижче!"
+        );
+
+        // Додати текстове поле та кнопку
+        const textInputContainer = document.createElement("div");
+        textInputContainer.className = "text-input-container";
+        textInputContainer.innerHTML = `
+            <textarea id="text-input" placeholder="Напишіть запит..." rows="2"></textarea>
+            <button id="send-text">Надіслати</button>
+        `;
+        floatingChat.appendChild(textInputContainer);
+
+        // Обробка відправлення тексту
+        document.getElementById("send-text").addEventListener("click", () => {
+            const text = document.getElementById("text-input").value.trim();
+            if (!text) return;
+
+            const clientId = localStorage.getItem("client_id") || Math.random().toString(36).substring(2);
+            localStorage.setItem("client_id", clientId);
+
+            appendMessage(text, true);
+
+            fetch(`${baseUrl}/process_text`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text, client_id: clientId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                appendMessage(data.answer || "🤖 Вибачте, немає відповіді");
+            })
+            .catch(err => {
+                console.error("❌ Помилка при надсиланні тексту:", err);
+                appendMessage("⚠️ Помилка звʼязку із сервером");
+            });
+
+            document.getElementById("text-input").value = "";
+        });
+    }
 });
-
-fetch("/static/widget_settings.json")
-  .then(r => r.json())
-  .then(cfg => interactionMode = cfg.interaction_mode || "voice+chat");
