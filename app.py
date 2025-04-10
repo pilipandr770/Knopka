@@ -135,145 +135,38 @@ def set_widget_settings():
         json.dump(settings, f, indent=2, ensure_ascii=False)
     return redirect(url_for("dashboard"))
 
-
 @app.route("/process_audio", methods=["POST"])
 def process_audio():
-    if "file" not in request.files or "client_id" not in request.form:
-        return jsonify({"error": "Missing file or client_id"}), 400
+    try:
+        if request.content_type == "application/json":
+            data = request.get_json()
+            user_text = data.get("text", "").strip()
+            if not user_text:
+                return jsonify({"response": "Будь ласка, введіть текст."})
+            gpt_response = ask_gpt(user_text)
+            return jsonify({"response": gpt_response})
 
-    audio_file = request.files["file"]
-    client_id = request.form["client_id"]
+        audio_file = request.files.get("audio")
+        if not audio_file:
+            return jsonify({"error": "Аудіофайл не знайдено"}), 400
 
-    # 📦 Читаємо байти, створюємо потік
-    audio_bytes = audio_file.read()
-    audio_stream = io.BytesIO(audio_bytes)
+        temp_filename = "temp_audio.webm"
+        audio_file.save(temp_filename)
 
-    print("📥 Отримано аудіо, розмір:", len(audio_bytes), "байт")
-
-    # 🧠 Whisper API
-    transcription = openai.audio.transcriptions.create(
-        model="whisper-1",
-        file=("audio.webm", audio_stream, "audio/webm")
-    )
-
-    user_message = transcription.text.strip()
-    print("🗣️ Користувач сказав:", user_message)
-
-    # Інструкція
-    instruction_path = "storage/instructions.txt"
-    if os.path.exists(instruction_path):
-        with open(instruction_path, "r", encoding="utf-8") as f:
-            assistant_instructions = f.read().strip()
-    else:
-        assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
-
-    # Пошук у базі знань
-    knowledge = search_knowledgebase(user_message)
-    full_message = (
-        f"📌 Інструкція:\n{assistant_instructions}\n\n"
-        f"📚 Контекст із бази знань:\n{knowledge}\n\n"
-        f"🗣️ Питання користувача:\n{user_message}"
-    )
-    print("🧠 Повідомлення до GPT:\n", full_message)
-
-    # GPT Threads API
-    thread = openai.beta.threads.create()
-    openai.beta.threads.messages.create(
-        thread_id=thread.id,
-        role="user",
-        content=full_message
-    )
-    run = openai.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id=ASSISTANT_ID
-    )
-
-    while True:
-        status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-
-        if status.status == "completed":
-            break
-        elif status.status == "requires_action":
-            tool_outputs = []
-            for tool_call in status.required_action.submit_tool_outputs.tool_calls:
-                func_name = tool_call.function.name
-                args = json.loads(tool_call.function.arguments)
-                print(f"🔧 Виклик функції: {func_name}")
-                print(f"📥 Аргументи: {json.dumps(args, ensure_ascii=False, indent=2)}")
-
-                try:
-                    if func_name == "get_product_info":
-                        result = get_product_info(**args)
-                    elif func_name == "add_product":
-                        result = add_product(**args)
-                    elif func_name == "create_calendar_event":
-                        result = create_calendar_event(**args)
-                        result += "\n\n⚠️ Це тестова подія. Для підтвердження зв'яжіться з представником."
-                    elif func_name == "list_calendar_events":
-                        result = list_calendar_events()
-                    elif func_name == "list_all_products":
-                        result = list_all_products()
-                    elif func_name == "find_free_slots":
-                        result = find_free_slots(**args)
-                    else:
-                        result = f"❌ Невідома функція: {func_name}"
-
-                    print(f"✅ Результат:\n{result}")
-                    tool_outputs.append({
-                        "tool_call_id": tool_call.id,
-                        "output": result
-                    })
-                except Exception as e:
-                    tool_outputs.append({
-                        "tool_call_id": tool_call.id,
-                        "output": f"❌ Помилка: {str(e)}"
-                    })
-
-            openai.beta.threads.runs.submit_tool_outputs(
-                thread_id=thread.id,
-                run_id=run.id,
-                tool_outputs=tool_outputs
+        with open(temp_filename, "rb") as f:
+            transcription = openai.audio.transcriptions.create(
+                model="whisper-1",
+                file=f
             )
-        elif status.status == "failed":
-            return jsonify({"error": "Assistant failed"}), 500
 
-        time.sleep(1)
+        os.remove(temp_filename)
+        user_text = transcription.text
+        gpt_response = ask_gpt(user_text)
+        return jsonify({"response": gpt_response})
 
-    # Відповідь GPT
-    messages = openai.beta.threads.messages.list(thread_id=thread.id)
-    answer = messages.data[0].content[0].text.value.strip()
-    print("✅ GPT відповів:", answer)
-
-    # 🎤 TTS
-    speech_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
-    tts = openai.audio.speech.create(
-        model="tts-1",
-        voice="onyx",
-        input=answer
-    )
-    with open(speech_file_path, "wb") as out:
-        out.write(tts.content)
-
-    # 🔖 Логування
-    log_entry = {
-        "timestamp": datetime.utcnow().isoformat(),
-        "question": user_message,
-        "answer": answer
-    }
-    if client_id in dialogues:
-        dialogues[client_id].append(log_entry)
-    else:
-        dialogues[client_id] = [log_entry]
-
-    with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
-        json.dump(dialogues, f, indent=2, ensure_ascii=False)
-
-    # 📨 Відповідь користувачу
-    response = make_response(send_file(speech_file_path, mimetype="audio/mpeg"))
-    response.headers["X-Assistant-Answer"] = quote(answer)
-    response.headers["X-User-Text"] = quote(user_message)
-    response.headers["Access-Control-Expose-Headers"] = "X-Assistant-Answer, X-User-Text"
-    return response
+    except Exception as e:
+        print(f"[process_audio] Error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # Новий роут для текстових запитів
 @app.route("/process_text", methods=["POST"])
