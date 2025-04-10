@@ -49,7 +49,7 @@ function appendAudioPlayer(audioUrl, label) {
 }
 
 function sendRecording() {
-    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+    const audioBlob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" }); // ✅ ключова зміна
     const formData = new FormData();
     formData.append("file", audioBlob, "recording.webm");
 
@@ -75,6 +75,9 @@ function sendRecording() {
         }
 
         appendAudioPlayer(audioUrl, assistantText);
+    }).catch(err => {
+        console.error("❌ Помилка при відправці аудіо:", err);
+        appendMessage("⚠️ Помилка з'єднання з сервером", false);
     });
 }
 
