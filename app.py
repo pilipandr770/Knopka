@@ -17,9 +17,10 @@ from utils.calendar import create_calendar_event, list_calendar_events, find_fre
 from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE
 
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "super-secret-dev-key") 
+
 CORS(app)
 openai.api_key = OPENAI_API_KEY
-app.secret_key = FLASK_SECRET_KEY
 
 # Завантаження існуючих діалогів
 if os.path.exists(DIALOGUES_FILE):
@@ -146,10 +147,12 @@ def process_audio():
         with open(tmp.name, "rb") as f:
             transcription = openai.audio.transcriptions.create(
                 model="whisper-1",
-                file=f
+                file=("recording.webm", f, "audio/webm")
             )
     os.remove(tmp.name)
-    user_message = transcription.text
+    user_message = transcription.text.strip()
+
+    print("🗣️ Користувач сказав:", user_message)
 
     instruction_path = "storage/instructions.txt"
     if os.path.exists(instruction_path):
@@ -164,6 +167,8 @@ def process_audio():
         f"📚 Контекст із бази знань:\n{knowledge}\n\n"
         f"🗣️ Питання користувача:\n{user_message}"
     )
+
+    print("🧠 Повідомлення до GPT:\n", full_message)
 
     thread = openai.beta.threads.create()
     openai.beta.threads.messages.create(
@@ -223,12 +228,16 @@ def process_audio():
                 tool_outputs=tool_outputs
             )
         elif status.status == "failed":
+            print("❌ Асистент не відповів (FAILED)")
             return jsonify({"error": "Assistant failed"}), 500
 
         time.sleep(1)
 
     messages = openai.beta.threads.messages.list(thread_id=thread.id)
-    answer = messages.data[0].content[0].text.value
+    answer = messages.data[0].content[0].text.value.strip()
+
+    print("✅ GPT відповів:", answer)
+    print("🎤 Озвучення запускається...")
 
     speech_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     tts_response = openai.audio.speech.create(
@@ -256,6 +265,7 @@ def process_audio():
     response = make_response(send_file(speech_file_path, mimetype="audio/mpeg"))
     response.headers["X-Assistant-Answer"] = quote(answer)
     response.headers["X-User-Text"] = quote(user_message)
+    response.headers["Access-Control-Expose-Headers"] = "X-Assistant-Answer, X-User-Text"
 
     return response
 
