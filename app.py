@@ -5,6 +5,7 @@ from flask_cors import CORS
 import openai
 import tempfile
 import os
+import io 
 import json
 import time
 from datetime import datetime
@@ -134,6 +135,7 @@ def set_widget_settings():
         json.dump(settings, f, indent=2, ensure_ascii=False)
     return redirect(url_for("dashboard"))
 
+
 @app.route("/process_audio", methods=["POST"])
 def process_audio():
     if "file" not in request.files or "client_id" not in request.form:
@@ -142,19 +144,18 @@ def process_audio():
     audio_file = request.files["file"]
     client_id = request.form["client_id"]
 
-    # Зберігаємо тимчасово
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-        audio_file.save(tmp.name)
-        print("📥 Аудіофайл збережено:", tmp.name)
+    # 📦 Читаємо байти, створюємо потік
+    audio_bytes = audio_file.read()
+    audio_stream = io.BytesIO(audio_bytes)
 
-    # Відкриваємо та передаємо Whisper із filename і типом
-    with open(tmp.name, "rb") as f:
-        transcription = openai.audio.transcriptions.create(
-            model="whisper-1",
-            file=("audio.webm", audio_file.stream, "audio/webm")
-        )
+    print("📥 Отримано аудіо, розмір:", len(audio_bytes), "байт")
 
-    os.remove(tmp.name)
+    # 🧠 Whisper API
+    transcription = openai.audio.transcriptions.create(
+        model="whisper-1",
+        file=("audio.webm", audio_stream, "audio/webm")
+    )
+
     user_message = transcription.text.strip()
     print("🗣️ Користувач сказав:", user_message)
 
@@ -166,7 +167,7 @@ def process_audio():
     else:
         assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
 
-    # Контекст
+    # Пошук у базі знань
     knowledge = search_knowledgebase(user_message)
     full_message = (
         f"📌 Інструкція:\n{assistant_instructions}\n\n"
@@ -175,7 +176,7 @@ def process_audio():
     )
     print("🧠 Повідомлення до GPT:\n", full_message)
 
-    # GPT: тред → повідомлення → запуск
+    # GPT Threads API
     thread = openai.beta.threads.create()
     openai.beta.threads.messages.create(
         thread_id=thread.id,
@@ -187,7 +188,6 @@ def process_audio():
         assistant_id=ASSISTANT_ID
     )
 
-    # Чекаємо завершення або обробляємо функції
     while True:
         status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
@@ -218,7 +218,7 @@ def process_audio():
                     else:
                         result = f"❌ Невідома функція: {func_name}"
 
-                    print(f"✅ Результат функції:\n{result}\n{'-'*40}")
+                    print(f"✅ Результат:\n{result}")
                     tool_outputs.append({
                         "tool_call_id": tool_call.id,
                         "output": result
@@ -226,7 +226,7 @@ def process_audio():
                 except Exception as e:
                     tool_outputs.append({
                         "tool_call_id": tool_call.id,
-                        "output": f"❌ Помилка при виконанні: {str(e)}"
+                        "output": f"❌ Помилка: {str(e)}"
                     })
 
             openai.beta.threads.runs.submit_tool_outputs(
@@ -235,34 +235,31 @@ def process_audio():
                 tool_outputs=tool_outputs
             )
         elif status.status == "failed":
-            print("❌ Помилка: асистент не відповів.")
             return jsonify({"error": "Assistant failed"}), 500
 
         time.sleep(1)
 
-    # Отримуємо повідомлення GPT
+    # Відповідь GPT
     messages = openai.beta.threads.messages.list(thread_id=thread.id)
     answer = messages.data[0].content[0].text.value.strip()
     print("✅ GPT відповів:", answer)
-    print("🎤 Озвучення...")
 
-    # Озвучуємо відповідь
+    # 🎤 TTS
     speech_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
-    tts_response = openai.audio.speech.create(
+    tts = openai.audio.speech.create(
         model="tts-1",
         voice="onyx",
         input=answer
     )
     with open(speech_file_path, "wb") as out:
-        out.write(tts_response.content)
+        out.write(tts.content)
 
-    # Логування діалогу
+    # 🔖 Логування
     log_entry = {
         "timestamp": datetime.utcnow().isoformat(),
         "question": user_message,
         "answer": answer
     }
-
     if client_id in dialogues:
         dialogues[client_id].append(log_entry)
     else:
@@ -271,12 +268,11 @@ def process_audio():
     with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
         json.dump(dialogues, f, indent=2, ensure_ascii=False)
 
-    # Відповідь браузеру
+    # 📨 Відповідь користувачу
     response = make_response(send_file(speech_file_path, mimetype="audio/mpeg"))
     response.headers["X-Assistant-Answer"] = quote(answer)
     response.headers["X-User-Text"] = quote(user_message)
     response.headers["Access-Control-Expose-Headers"] = "X-Assistant-Answer, X-User-Text"
-
     return response
 
 if __name__ == "__main__":
