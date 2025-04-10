@@ -42,6 +42,16 @@ style.innerHTML = `
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   z-index: 9999;
+  transition: transform 0.2s ease-in-out;
+}
+#voice-widget-button.recording {
+  animation: pulse 1s infinite;
+  transform: scale(1.1);
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.6); }
+  70% { box-shadow: 0 0 0 15px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
 }
 #voice-widget-chat {
   position: fixed;
@@ -96,8 +106,22 @@ style.innerHTML = `
 document.head.appendChild(style);
 
 // Відкриття/закриття чату
-widgetButton.addEventListener("click", () => {
-  chatContainer.style.display = "block";
+widgetButton.addEventListener("mousedown", () => {
+  startRecording();
+});
+
+widgetButton.addEventListener("mouseup", () => {
+  stopRecording();
+});
+
+widgetButton.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  startRecording();
+});
+
+widgetButton.addEventListener("touchend", (e) => {
+  e.preventDefault();
+  stopRecording();
 });
 
 document.getElementById("close-chat").addEventListener("click", () => {
@@ -125,6 +149,7 @@ form.addEventListener("submit", async (e) => {
 
   const data = await response.json();
   appendMessage(data.answer, "bot-msg");
+  if (data.audio_url) playAudio(data.audio_url);
 });
 
 function appendMessage(text, className) {
@@ -142,11 +167,13 @@ async function startRecording() {
     mediaRecorder = new MediaRecorder(stream);
     mediaRecorder.start();
     isRecording = true;
+    widgetButton.classList.add("recording");
     audioChunks = [];
     mediaRecorder.addEventListener("dataavailable", event => {
       audioChunks.push(event.data);
     });
     mediaRecorder.addEventListener("stop", async () => {
+      widgetButton.classList.remove("recording");
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
       const formData = new FormData();
       formData.append("audio", audioBlob, "recording.webm");
@@ -158,6 +185,7 @@ async function startRecording() {
       const data = await response.json();
 
       if (data.transcription) {
+        chatContainer.style.display = "block";
         appendMessage(data.transcription, "user-msg");
 
         const gptResponse = await fetch("/process_text", {
@@ -168,11 +196,11 @@ async function startRecording() {
 
         const gptData = await gptResponse.json();
         appendMessage(gptData.answer, "bot-msg");
+        if (gptData.audio_url) playAudio(gptData.audio_url);
       } else {
         appendMessage("Не вдалося розпізнати голос.", "bot-msg");
       }
     });
-    setTimeout(() => stopRecording(), 10000);
   } catch (err) {
     fallbackToChat();
   }
@@ -190,7 +218,15 @@ function fallbackToChat() {
   appendMessage("Вибачте, ваш пристрій не підтримує запис голосу. Ви можете спілкуватися в чаті.", "bot-msg");
 }
 
-// Автостарт або fallback
+function playAudio(url) {
+  const audio = new Audio(url);
+  audio.play().catch((err) => {
+    console.warn("Audio playback failed:", err);
+  });
+}
+
 navigator.mediaDevices.getUserMedia({ audio: true })
-  .then(() => startRecording())
+  .then(() => {
+    // нічого не робимо, чат запускається натисканням кнопки
+  })
   .catch(() => fallbackToChat());
