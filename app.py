@@ -142,18 +142,23 @@ def process_audio():
     audio_file = request.files["file"]
     client_id = request.form["client_id"]
 
+    # Зберігаємо тимчасово
     with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
         audio_file.save(tmp.name)
-        with open(tmp.name, "rb") as f:
-            transcription = openai.audio.transcriptions.create(
-                model="whisper-1",
-                file=("recording.webm", f, "audio/webm")
-            )
+        print("📥 Аудіофайл збережено:", tmp.name)
+
+    # Відкриваємо та передаємо Whisper із filename і типом
+    with open(tmp.name, "rb") as f:
+        transcription = openai.audio.transcriptions.create(
+            model="whisper-1",
+            file=("audio.webm", f, "audio/webm")
+        )
+
     os.remove(tmp.name)
     user_message = transcription.text.strip()
-
     print("🗣️ Користувач сказав:", user_message)
 
+    # Інструкція
     instruction_path = "storage/instructions.txt"
     if os.path.exists(instruction_path):
         with open(instruction_path, "r", encoding="utf-8") as f:
@@ -161,15 +166,16 @@ def process_audio():
     else:
         assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
 
+    # Контекст
     knowledge = search_knowledgebase(user_message)
     full_message = (
         f"📌 Інструкція:\n{assistant_instructions}\n\n"
         f"📚 Контекст із бази знань:\n{knowledge}\n\n"
         f"🗣️ Питання користувача:\n{user_message}"
     )
-
     print("🧠 Повідомлення до GPT:\n", full_message)
 
+    # GPT: тред → повідомлення → запуск
     thread = openai.beta.threads.create()
     openai.beta.threads.messages.create(
         thread_id=thread.id,
@@ -181,6 +187,7 @@ def process_audio():
         assistant_id=ASSISTANT_ID
     )
 
+    # Чекаємо завершення або обробляємо функції
     while True:
         status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
 
@@ -228,17 +235,18 @@ def process_audio():
                 tool_outputs=tool_outputs
             )
         elif status.status == "failed":
-            print("❌ Асистент не відповів (FAILED)")
+            print("❌ Помилка: асистент не відповів.")
             return jsonify({"error": "Assistant failed"}), 500
 
         time.sleep(1)
 
+    # Отримуємо повідомлення GPT
     messages = openai.beta.threads.messages.list(thread_id=thread.id)
     answer = messages.data[0].content[0].text.value.strip()
-
     print("✅ GPT відповів:", answer)
-    print("🎤 Озвучення запускається...")
+    print("🎤 Озвучення...")
 
+    # Озвучуємо відповідь
     speech_file_path = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3").name
     tts_response = openai.audio.speech.create(
         model="tts-1",
@@ -248,6 +256,7 @@ def process_audio():
     with open(speech_file_path, "wb") as out:
         out.write(tts_response.content)
 
+    # Логування діалогу
     log_entry = {
         "timestamp": datetime.utcnow().isoformat(),
         "question": user_message,
@@ -262,6 +271,7 @@ def process_audio():
     with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
         json.dump(dialogues, f, indent=2, ensure_ascii=False)
 
+    # Відповідь браузеру
     response = make_response(send_file(speech_file_path, mimetype="audio/mpeg"))
     response.headers["X-Assistant-Answer"] = quote(answer)
     response.headers["X-User-Text"] = quote(user_message)
