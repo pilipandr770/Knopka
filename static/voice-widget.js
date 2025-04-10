@@ -1,4 +1,4 @@
-// 📁 static/voice-widget.js (з адаптивним fetch)
+// 📁 static/voice-widget.js (працююча фінальна версія)
 
 let mediaRecorder;
 let audioChunks = [];
@@ -49,7 +49,13 @@ function appendAudioPlayer(audioUrl, label) {
 }
 
 function sendRecording() {
-    const audioBlob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" }); // ✅ ключова зміна
+    const audioBlob = new Blob(audioChunks, { type: "audio/webm; codecs=opus" });
+
+    if (audioBlob.size < 1000) {
+        alert("⚠️ Помилка: аудіо занадто коротке або порожнє. Спробуйте ще раз.");
+        return;
+    }
+
     const formData = new FormData();
     formData.append("file", audioBlob, "recording.webm");
 
@@ -139,14 +145,6 @@ document.body.appendChild(autoplayToggle);
 document.getElementById("autoplay-check").addEventListener("change", e => {
     autoplay = e.target.checked;
 });
-
-    if (audioBlob.size < 1000) {
-    alert("⚠️ Помилка: аудіо занадто коротке або порожнє. Спробуйте ще раз.");
-    return;
-}
-
-console.log("📦 Audio blob:", audioBlob);
-console.log("📏 Розмір blob:", audioBlob.size);
 
 fetch("/static/widget_settings.json")
   .then(r => r.json())
