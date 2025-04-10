@@ -138,8 +138,9 @@ def set_widget_settings():
 @app.route("/process_audio", methods=["POST"])
 def process_audio():
     try:
-        if request.content_type == "application/json":
-            data = request.get_json()
+        # Заміна перевірки контенту на безпечнішу:
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
             user_text = data.get("text", "").strip()
             if not user_text:
                 return jsonify({"response": "Будь ласка, введіть текст."})
