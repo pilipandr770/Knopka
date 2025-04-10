@@ -6,23 +6,97 @@ document.addEventListener("DOMContentLoaded", () => {
     let isRecording = false;
     let autoplay = true;
     let recordTimeout;
-    let interactionMode = "voice+chat"; // за замовчуванням
+    let interactionMode = "voice+chat";
     const baseUrl = window.location.origin;
 
     const floatingChat = document.createElement("div");
     floatingChat.id = "floating-chat";
     floatingChat.style.display = "none";
     floatingChat.innerHTML = `
+      <style>
+        #floating-chat {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            font-family: sans-serif;
+            z-index: 9999;
+        }
+        #chat-box {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .chat-message {
+            padding: 8px 12px;
+            margin: 6px 0;
+            border-radius: 10px;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+        .chat-message.user {
+            align-self: flex-end;
+            background: #DCF8C6;
+        }
+        .chat-message.assistant {
+            align-self: flex-start;
+            background: #eee;
+        }
+        #chat-input {
+            border: none;
+            padding: 8px;
+            font-size: 14px;
+            border-top: 1px solid #ccc;
+            width: 100%;
+        }
+        .audio-container {
+            padding: 5px;
+        }
+        .voice-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #0b93f6;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+        }
+        .voice-button.recording {
+            background: red;
+        }
+        .autoplay-toggle {
+            position: fixed;
+            bottom: 100px;
+            right: 90px;
+            background: #fff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            z-index: 9999;
+        }
+      </style>
       <div id="chat-box"></div>
       <input id="chat-input" type="text" placeholder="Напишіть повідомлення..." />
-      <button onclick="document.getElementById('floating-chat').style.display='none'">❌</button>
     `;
     document.body.appendChild(floatingChat);
 
     function appendMessage(text, isUser = false) {
         if (interactionMode !== "voice+chat") return;
         const msg = document.createElement("div");
-        msg.className = isUser ? "chat-message user" : "chat-message assistant";
+        msg.className = "chat-message " + (isUser ? "user" : "assistant");
         msg.textContent = text;
         document.getElementById("chat-box").appendChild(msg);
         document.getElementById("chat-box").scrollTop = 999999;
@@ -33,7 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
         container.className = "audio-container";
 
         const labelEl = document.createElement("div");
-        labelEl.className = "audio-label";
         labelEl.textContent = label;
 
         const audio = document.createElement("audio");
@@ -81,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function fallbackToChat() {
         interactionMode = "voice+chat";
         floatingChat.style.display = "flex";
-        appendMessage("😔 На жаль, ваш пристрій не підтримує запис аудіо. Ви можете продовжити спілкування в текстовому чаті.");
+        appendMessage("😔 Ваш браузер не підтримує запис голосу або мікрофон недоступний. Ви можете спілкуватися з асистентом у текстовому чаті.");
     }
 
     function startRecording() {
@@ -125,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const recordButton = document.createElement("button");
     recordButton.className = "voice-button";
     recordButton.innerHTML = "🎤";
-    recordButton.title = "Утримуй, щоб записати (до 30 сек)";
+    recordButton.title = "Утримуйте для запису (до 30 сек)";
     document.body.appendChild(recordButton);
     recordButton.addEventListener("mousedown", startRecording);
     recordButton.addEventListener("touchstart", startRecording);
@@ -137,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
     autoplayToggle.className = "autoplay-toggle";
     autoplayToggle.innerHTML = `
       <input type="checkbox" checked id="autoplay-check" />
-      🔊 Автовідтворення
+      🔊 Авто
     `;
     document.body.appendChild(autoplayToggle);
     document.getElementById("autoplay-check").addEventListener("change", e => {
