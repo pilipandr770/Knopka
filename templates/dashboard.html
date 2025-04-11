@@ -1,0 +1,54 @@
+<!-- 📁 templates/dashboard.html -->
+{% extends "base.html" %}
+{% block title %}Діалоги клієнтів{% endblock %}
+{% block content %}
+<h2>📊 Історія діалогів</h2>
+<a href="/instructions">✏️ Інструкції для асистента</a>
+
+<form method="POST" action="/set_widget_settings" style="margin-top:30px">
+  <h3>⚙️ Налаштування віджету</h3>
+
+  <label>Режим:</label>
+  <select name="interaction_mode">
+    <option value="voice+chat">🎤 + 💬 Голос + чат</option>
+    <option value="voice-only">🎤 Лише голос</option>
+    <option value="chat-only">💬 Лише чат</option>
+  </select><br><br>
+
+  <label>Текст кнопки:</label>
+  <input name="btn_text" value="🎤"><br>
+
+  <label>Колір тексту:</label>
+  <input type="color" name="btn_color" value="#ffffff"><br>
+
+  <label>Колір фону:</label>
+  <input type="color" name="btn_bg" value="#4CAF50"><br>
+
+  <label>Розмір (px):</label>
+  <input name="btn_size" value="60px"><br>
+
+  <label>Позиція:</label>
+  <select name="btn_position">
+    <option value="bottom-right">⬇️ Правий нижній</option>
+    <option value="bottom-left">⬅️ Лівий нижній</option>
+    <option value="top-right">⬆️ Правий верхній</option>
+    <option value="top-left">⬅️ Верхній лівий</option>
+  </select><br><br>
+
+  <button type="submit">💾 Зберегти</button>
+</form>
+
+<hr>
+{% for client_id, logs in dialogues.items() %}
+  <h3>👤 Клієнт: {{ client_id }}</h3>
+  <ul>
+  {% for entry in logs %}
+    <li>
+      <b>{{ entry.timestamp }}:</b><br>
+      <i>Q:</i> {{ entry.question }}<br>
+      <i>A:</i> {{ entry.answer }}
+    </li>
+  {% endfor %}
+  </ul>
+{% endfor %}
+{% endblock %}

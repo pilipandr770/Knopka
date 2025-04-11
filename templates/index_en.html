@@ -1,0 +1,47 @@
+<!-- 📁 templates/index_en.html -->
+{% extends "base_en.html" %}
+{% block title %}Voice Assistant{% endblock %}
+{% block content %}
+<h1>🎙️ Voice Assistant</h1>
+
+<p><strong>Try the assistant demo right now!</strong></p>
+
+<p>
+This voice assistant is powered by OpenAI technologies: Whisper (speech recognition), GPT (intelligent replies), and TTS (text-to-speech).<br>
+It has access to a test product database and can:
+<ul>
+    <li>answer your questions;</li>
+    <li>suggest products from the database;</li>
+    <li>hold natural voice or text conversations.</li>
+</ul>
+</p>
+
+<p>
+📌 Just <strong>press and hold the microphone button</strong> — voice recording will start.<br>
+<strong>Release the button</strong> — and your message will be automatically sent to the assistant.<br>
+By default, the maximum recording duration is <strong>30 seconds</strong>, but after ordering you can increase this limit.
+</p>
+
+<p>
+This is a <em>demo version</em> of how the assistant will look on your website.
+</p>
+
+<hr>
+
+<h3>🔧 What you'll get after ordering:</h3>
+<ul>
+    <li>an assistant with knowledge of your company;</li>
+    <li>a personal dashboard to manage functionality;</li>
+    <li>the ability to:
+        <ul>
+            <li>view the history of user conversations;</li>
+            <li>edit GPT instructions;</li>
+            <li>upload or update your knowledge base;</li>
+            <li>choose operation mode (voice only or voice + chat);</li>
+            <li>test how the assistant consults clients.</li>
+        </ul>
+    </li>
+</ul>
+
+<script src="/static/voice-widget.js"></script>
+{% endblock %}

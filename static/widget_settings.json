@@ -1,0 +1,10 @@
+{
+  "interaction_mode": "voice+chat",
+  "button": {
+    "text": "🎤",
+    "color": "#ffffff",
+    "background": "#4caf50",
+    "size": "60px",
+    "position": "bottom-left"
+  }
+}

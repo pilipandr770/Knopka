@@ -1,0 +1,15 @@
+{% extends "base_de.html" %}
+{% block title %}Wissensdatenbank hochladen{% endblock %}
+{% block content %}
+<h2>Datei zur Wissensdatenbank hochladen</h2>
+<form method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" required><br><br>
+    <button type="submit">Hochladen</button>
+</form>
+{% if message %}
+<p style="color:green">{{ message }}</p>
+{% endif %}
+{% if error %}
+<p style="color:red">{{ error }}</p>
+{% endif %}
+{% endblock %}

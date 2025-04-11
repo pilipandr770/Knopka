@@ -1,0 +1,54 @@
+<!-- 📁 templates/dashboard_de.html -->
+{% extends "base_de.html" %}
+{% block title %}Kundendialoge{% endblock %}
+{% block content %}
+<h2>📊 Verlauf der Gespräche</h2>
+<a href="/instructions">✏️ Anweisungen für den Assistenten</a>
+
+<form method="POST" action="/set_widget_settings" style="margin-top:30px">
+  <h3>⚙️ Widget-Einstellungen</h3>
+
+  <label>Modus:</label>
+  <select name="interaction_mode">
+    <option value="voice+chat">🎤 + 💬 Sprache + Chat</option>
+    <option value="voice-only">🎤 Nur Sprache</option>
+    <option value="chat-only">💬 Nur Chat</option>
+  </select><br><br>
+
+  <label>Button-Text:</label>
+  <input name="btn_text" value="🎤"><br>
+
+  <label>Textfarbe:</label>
+  <input type="color" name="btn_color" value="#ffffff"><br>
+
+  <label>Hintergrundfarbe:</label>
+  <input type="color" name="btn_bg" value="#4CAF50"><br>
+
+  <label>Größe (px):</label>
+  <input name="btn_size" value="60px"><br>
+
+  <label>Position:</label>
+  <select name="btn_position">
+    <option value="bottom-right">⬇️ Unten rechts</option>
+    <option value="bottom-left">⬅️ Unten links</option>
+    <option value="top-right">⬆️ Oben rechts</option>
+    <option value="top-left">⬅️ Oben links</option>
+  </select><br><br>
+
+  <button type="submit">💾 Speichern</button>
+</form>
+
+<hr>
+{% for client_id, logs in dialogues.items() %}
+  <h3>👤 Kunde: {{ client_id }}</h3>
+  <ul>
+  {% for entry in logs %}
+    <li>
+      <b>{{ entry.timestamp }}:</b><br>
+      <i>F:</i> {{ entry.question }}<br>
+      <i>A:</i> {{ entry.answer }}
+    </li>
+  {% endfor %}
+  </ul>
+{% endfor %}
+{% endblock %}

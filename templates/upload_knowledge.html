@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Завантаження бази знань{% endblock %}
+{% block content %}
+<h2>Завантажити файл до бази знань</h2>
+<form method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" required><br><br>
+    <button type="submit">Завантажити</button>
+</form>
+{% if message %}
+<p style="color:green">{{ message }}</p>
+{% endif %}
+{% if error %}
+<p style="color:red">{{ error }}</p>
+{% endif %}
+{% endblock %}
