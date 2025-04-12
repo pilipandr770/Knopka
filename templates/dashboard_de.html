@@ -3,7 +3,14 @@
 {% block title %}Kundendialoge{% endblock %}
 {% block content %}
 <h2>📊 Verlauf der Gespräche</h2>
-<a href="/instructions">✏️ Anweisungen für den Assistenten</a>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  <a href="/instructions">✏️ Anweisungen für den Assistenten</a>
+  <form method="POST" action="/clear_history" style="margin: 0;" onsubmit="return confirm('Sind Sie sicher, dass Sie den gesamten Gesprächsverlauf löschen möchten?');">
+    <button type="submit" style="background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+      🗑️ Verlauf löschen
+    </button>
+  </form>
+</div>
 
 <form method="POST" action="/set_widget_settings" style="margin-top:30px">
   <h3>⚙️ Widget-Einstellungen</h3>

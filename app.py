@@ -137,6 +137,7 @@ def logout():
 def process_audio():
     try:
         audio_file = request.files.get("audio")
+        client_id = request.form.get("client_id", "unknown")
         if not audio_file:
             return jsonify({"error": "Аудіофайл не знайдено"}), 400
 
@@ -152,6 +153,16 @@ def process_audio():
 
         reply = ask_gpt(transcription.text)
 
+        # Зберігаємо історію діалогу
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "question": transcription.text,
+            "answer": reply
+        }
+        dialogues.setdefault(client_id, []).append(log_entry)
+        with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
+            json.dump(dialogues, f, indent=2, ensure_ascii=False)
+
         speech = openai.audio.speech.create(
             model="tts-1",
             voice="nova",
@@ -162,7 +173,6 @@ def process_audio():
             response=speech.read(),
             mimetype="audio/mpeg"
         )
-        # URL-encode Unicode headers
         response.headers["X-Assistant-Answer"] = quote(reply)
         response.headers["X-User-Text"] = quote(transcription.text)
         return response
@@ -203,6 +213,15 @@ def process_text():
         json.dump(dialogues, f, indent=2, ensure_ascii=False)
 
     return jsonify({"answer": answer})
+
+@app.route("/clear_history", methods=["POST"])
+@require_login
+def clear_history():
+    global dialogues
+    dialogues = {}
+    with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
+        json.dump(dialogues, f, indent=2, ensure_ascii=False)
+    return redirect(url_for("dashboard"))
 
 def ask_gpt(prompt):
     thread = openai.beta.threads.create()
