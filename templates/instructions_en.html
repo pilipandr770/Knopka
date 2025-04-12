@@ -4,7 +4,7 @@
 {% block content %}
 <h2>Instructions for the Assistant</h2>
 <form method="POST">
-    <textarea name="instructions" rows="10" cols="80">{{ content }}</textarea><br><br>
+    <textarea name="instructions" rows="10" cols="80" maxlength="10000">{{ content }}</textarea><br><br>
     <button type="submit">💾 Save</button>
 </form>
 {% if message %}
