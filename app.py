@@ -306,34 +306,21 @@ def process_text():
     
     # For all other queries, use the OpenAI assistant
     else:
-        instruction_path = "storage/instructions.txt"
-        assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
-        if os.path.exists(instruction_path):
-            with open(instruction_path, "r", encoding="utf-8") as f:
-                assistant_instructions = f.read().strip()
+        try:
+            instruction_path = "storage/instructions.txt"
+            assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
+            if os.path.exists(instruction_path):
+                with open(instruction_path, "r", encoding="utf-8") as f:
+                    assistant_instructions = f.read().strip()
 
-        knowledge = search_knowledgebase(text)
-        full_message = f"📌 Інструкція:\n{assistant_instructions}\n\n📚 Контекст із бази знань:\n{knowledge}\n\n🗣️ Питання користувача:\n{text}"
+            knowledge = search_knowledgebase(text)
+            full_message = f"📌 Інструкція:\n{assistant_instructions}\n\n📚 Контекст із бази знань:\n{knowledge}\n\n🗣️ Питання користувача:\n{text}"
 
-        thread = openai.beta.threads.create()
-        openai.beta.threads.messages.create(thread_id=thread.id, role="user", content=full_message)
-        run = openai.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
-        
-        # Wait for completion with timeout
-        start_time = time.time()
-        max_wait_time = 30  # Maximum wait time in seconds
-        
-        while time.time() - start_time < max_wait_time:
-            run_status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
-            if run_status.status == "completed":
-                break
-            time.sleep(1)
-            
-        if run_status.status != "completed":
-            return jsonify({"answer": "Вибачте, асистент не встиг обробити ваш запит. Спробуйте ще раз."})
-
-        messages = openai.beta.threads.messages.list(thread_id=thread.id)
-        answer = messages.data[0].content[0].text.value.strip()
+            # Используем обновленную функцию ask_gpt
+            answer = ask_gpt(full_message)
+        except Exception as e:
+            print(f"Error in process_text: {e}")
+            answer = "Извините, произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже."
 
     # Log the conversation
     log_entry = {"timestamp": datetime.utcnow().isoformat(), "question": text, "answer": answer}
@@ -452,13 +439,41 @@ def delete_booking():
     return redirect(url_for("view_bookings"))
 
 def ask_gpt(prompt):
-    thread = openai.beta.threads.create()
-    openai.beta.threads.messages.create(thread_id=thread.id, role="user", content=prompt)
-    run = openai.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
-    while openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id).status != "completed":
-        time.sleep(1)
-    messages = openai.beta.threads.messages.list(thread_id=thread.id)
-    return messages.data[0].content[0].text.value.strip()
+    try:
+        # Проверяем, какой метод использовать для инициализации клиента
+        if hasattr(openai, "client") and openai.client:
+            # Используем клиентский метод для ключей проекта
+            thread = openai.client.beta.threads.create()
+            openai.client.beta.threads.messages.create(thread_id=thread.id, role="user", content=prompt)
+            run = openai.client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
+            
+            # Ждем завершения запроса
+            while True:
+                run_status = openai.client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+                if run_status.status == "completed":
+                    break
+                time.sleep(1)
+            
+            messages = openai.client.beta.threads.messages.list(thread_id=thread.id)
+            return messages.data[0].content[0].text.value.strip()
+        else:
+            # Используем стандартный метод для обычных ключей
+            thread = openai.beta.threads.create()
+            openai.beta.threads.messages.create(thread_id=thread.id, role="user", content=prompt)
+            run = openai.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
+            
+            # Ждем завершения запроса
+            while True:
+                run_status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+                if run_status.status == "completed":
+                    break
+                time.sleep(1)
+            
+            messages = openai.beta.threads.messages.list(thread_id=thread.id)
+            return messages.data[0].content[0].text.value.strip()
+    except Exception as e:
+        print(f"❌ Ошибка в запросе к OpenAI: {str(e)}")
+        return f"Извините, произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже или свяжитесь с администратором."
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
