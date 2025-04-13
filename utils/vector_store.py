@@ -10,6 +10,9 @@ EMBED_MODEL = "text-embedding-3-small"
 KB_DIR = Path("storage/knowledgebase")
 VECTOR_DB_FILE = Path("storage/vector_store.json")
 
+# Убедимся, что каталог для базы знаний существует
+KB_DIR.mkdir(parents=True, exist_ok=True)
+
 # Завантаження або створення словника
 if VECTOR_DB_FILE.exists():
     with open(VECTOR_DB_FILE, "r", encoding="utf-8") as f:
