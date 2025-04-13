@@ -7,35 +7,79 @@ from openai import OpenAI  # Импортируем конструктор кл�
 import os
 import json
 import time
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 from utils.auth import is_logged_in, require_login, ADMIN_USERNAME, ADMIN_PASSWORD
 from utils.vector_store import search_knowledgebase
 from utils.products import get_product_info, add_product, list_all_products
 from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
-from config import OPENAI_API_KEY, OPENAI_ORG_ID, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings
+from config import OPENAI_API_KEY, OPENAI_ORG_ID, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings, is_render
 from urllib.parse import quote
 
 # Создаем глобальный клиент OpenAI
 client = None
 try:
-    # Инициализация клиента OpenAI с настройками из config
-    client = OpenAI(**openai_client_settings)
-    print("✓ OpenAI клиент успешно инициализирован")
+    print("\n=== Инициализация OpenAI клиента ===")
+    print(f"API Key доступен: {'Да' if OPENAI_API_KEY else 'Нет'}")
+    print(f"Тип API Key: {'Ключ проекта' if OPENAI_API_KEY and OPENAI_API_KEY.startswith('sk-proj-') else 'Стандартный ключ'}")
+    print(f"Длина API Key: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0} символов")
     
-    # Проверяем соединение
-    models = client.models.list()
-    print(f"✓ Успешное соединение с API. Доступны {len(models.data)} моделей")
-    
-    # Также настраиваем модуль openai для обратной совместимости
-    openai.api_key = OPENAI_API_KEY
-    if OPENAI_ORG_ID:
-        openai.organization = OPENAI_ORG_ID
-    
-    # Сохраняем клиент как глобальную переменную для использования в других модулях
-    openai.client = client
+    if not OPENAI_API_KEY:
+        print("КРИТИЧЕСКАЯ ОШИБКА: Ключ API не найден! Проверьте переменные окружения.")
+        if is_render:
+            print("На Render переменная OPENAI_API_KEY должна быть настроена в панели управления.")
+        else:
+            print("В локальной среде переменная должна быть в файле .env")
+    else:
+        # Инициализация клиента OpenAI с настройками из config
+        client = OpenAI(**openai_client_settings)
+        print("✓ OpenAI клиент успешно инициализирован")
+        
+        try:
+            # Проверяем соединение более надежным способом
+            print("Проверка соединения с API...")
+            models = client.models.list()
+            print(f"✓ Успешное соединение с API. Доступны {len(models.data)} моделей")
+            
+            # Также настраиваем модуль openai для обратной совместимости
+            openai.api_key = OPENAI_API_KEY
+            if OPENAI_ORG_ID:
+                openai.organization = OPENAI_ORG_ID
+            
+            # Убедимся, что клиент доступен для импорта из других модулей
+            openai.client = client
+            print("✓ Глобальный клиент настроен для всех модулей")
+            
+            # Проверяем, что ассистент доступен
+            if ASSISTANT_ID:
+                try:
+                    assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
+                    print(f"✓ Ассистент найден и доступен: {assistant.name}")
+                except Exception as assistant_error:
+                    print(f"✗ Ошибка при проверке ассистента: {assistant_error}")
+            else:
+                print("✗ ID ассистента не указан!")
+                
+        except Exception as connection_error:
+            print(f"✗ Ошибка соединения с API OpenAI: {connection_error}")
+            
+            # Попробуем проверить, работает ли HTTP клиент в принципе
+            try:
+                import requests
+                r = requests.get('https://api.openai.com/v1/models')
+                print(f"HTTP статус запроса к API: {r.status_code}")
+                if r.status_code == 401:
+                    print("API отвечает, но ключ неверный или просрочен")
+                elif r.status_code == 403:
+                    print("API отвечает, но доступ запрещен (проверьте настройки организации)")
+            except Exception as req_error:
+                print(f"Не удалось проверить HTTP соединение: {req_error}")
 except Exception as e:
-    print(f"✗ Ошибка при инициализации OpenAI клиента: {e}")
+    print(f"✗ Критическая ошибка при инициализации OpenAI клиента: {e}")
+    print(f"Тип ошибки: {type(e).__name__}")
+    print(f"Детали: {str(e)}")
+print("=== Конец инициализации клиента ===\n")
 
 app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY  # Use the value from config
