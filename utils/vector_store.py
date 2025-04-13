@@ -105,6 +105,25 @@ def index_knowledgebase():
             except Exception as e:
                 print(f"❌ Error embedding chunk: {e}")
 
+    # Добавим инструкции из instructions.txt в базу знаний
+    instruction_file = Path("storage/instructions.txt")
+    if instruction_file.exists():
+        with open(instruction_file, "r", encoding="utf-8") as f:
+            instructions = f.read().strip()
+            if instructions:
+                chunks = chunk_text(instructions)
+                for chunk in chunks:
+                    try:
+                        vector = embed_text(chunk)
+                        vector_db.append({
+                            "id": str(uuid4()),
+                            "text": chunk,
+                            "embedding": vector,
+                            "source": "instructions.txt"
+                        })
+                    except Exception as e:
+                        print(f"❌ Error embedding instruction chunk: {e}")
+
     # Save to disk
     with open(VECTOR_DB_FILE, "w", encoding="utf-8") as f:
         json.dump(vector_db, f, indent=2, ensure_ascii=False)
