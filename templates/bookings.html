@@ -29,3 +29,13 @@
   </div>
 </div>
 {% endblock %}
+
+{% block content %}
+<h1>Список бронювань</h1>
+<p>Ось список усіх бронювань:</p>
+<ul>
+    {% for booking in bookings %}
+    <li>{{ booking.name }} - {{ booking.date }} о {{ booking.time }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

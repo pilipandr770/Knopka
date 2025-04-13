@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Booking{% endblock %}
+{% block title %}Бронювання{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -8,42 +8,42 @@
     <div class="col-md-8">
       <div class="card">
         <div class="card-header bg-primary text-white">
-          <h2 class="m-0">Booking</h2>
+          <h2 class="m-0">Бронювання</h2>
         </div>
         <div class="card-body">
-          <p>Fill out the form below to book an appointment.</p>
+          <p>Заповніть форму нижче, щоб забронювати зустріч.</p>
           <form method="POST">
             <div class="mb-3">
-              <label for="name" class="form-label">Name:</label>
+              <label for="name" class="form-label">Ім'я:</label>
               <input type="text" class="form-control" id="name" name="name" required>
             </div>
             
             <div class="mb-3">
-              <label for="email" class="form-label">Email:</label>
+              <label for="email" class="form-label">Електронна пошта:</label>
               <input type="email" class="form-control" id="email" name="email" required>
             </div>
             
             <div class="mb-3">
-              <label for="phone" class="form-label">Phone:</label>
+              <label for="phone" class="form-label">Телефон:</label>
               <input type="text" class="form-control" id="phone" name="phone">
             </div>
             
             <div class="mb-3">
-              <label for="date" class="form-label">Date:</label>
+              <label for="date" class="form-label">Дата:</label>
               <input type="date" class="form-control" id="date" name="date" required>
             </div>
             
             <div class="mb-3">
-              <label for="time" class="form-label">Time:</label>
+              <label for="time" class="form-label">Час:</label>
               <input type="time" class="form-control" id="time" name="time" required>
             </div>
             
             <div class="mb-3">
-              <label for="topic" class="form-label">Topic:</label>
+              <label for="topic" class="form-label">Тема:</label>
               <textarea class="form-control" id="topic" name="topic" rows="3"></textarea>
             </div>
             
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <button type="submit" class="btn btn-primary">Надіслати</button>
           </form>
         </div>
       </div>
