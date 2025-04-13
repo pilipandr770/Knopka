@@ -1,10 +1,13 @@
 # utils/calendar.py
 
 import json
+import os
 from pathlib import Path
 from datetime import datetime, timedelta
 
-CALENDAR_FILE = Path("storage/calendar_events.json")
+# Use absolute path to ensure file is found regardless of working directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CALENDAR_FILE = os.path.join(BASE_DIR, "storage", "calendar_events.json")
 
 def create_calendar_event(title: str, start_time: str, end_time: str, email: str = None) -> str:
     try:
@@ -21,9 +24,14 @@ def create_calendar_event(title: str, start_time: str, end_time: str, email: str
     }
 
     events = []
-    if CALENDAR_FILE.exists():
-        with open(CALENDAR_FILE, "r", encoding="utf-8") as f:
-            events = json.load(f)
+    if os.path.exists(CALENDAR_FILE):
+        try:
+            with open(CALENDAR_FILE, "r", encoding="utf-8") as f:
+                events = json.load(f)
+        except json.JSONDecodeError:
+            # Handle case where file exists but is not valid JSON
+            print(f"⚠️ Warning: Calendar file exists but is not valid JSON. Creating new file.")
+            events = []
 
     events.append(new_event)
     with open(CALENDAR_FILE, "w", encoding="utf-8") as f:
@@ -33,11 +41,15 @@ def create_calendar_event(title: str, start_time: str, end_time: str, email: str
     return f"📅 Подія \"{title}\" створена як тестова на {start_time} – {end_time}."
 
 def list_calendar_events() -> str:
-    if not CALENDAR_FILE.exists():
+    if not os.path.exists(CALENDAR_FILE):
         return "📭 Немає запланованих подій."
 
-    with open(CALENDAR_FILE, "r", encoding="utf-8") as f:
-        events = json.load(f)
+    try:
+        with open(CALENDAR_FILE, "r", encoding="utf-8") as f:
+            events = json.load(f)
+    except json.JSONDecodeError:
+        print(f"⚠️ Error: Could not parse calendar file as JSON")
+        return "❌ Помилка зчитування календаря."
 
     now = datetime.utcnow()
     upcoming = [
@@ -62,11 +74,15 @@ def find_free_slots(duration_minutes=30, start_date=None, max_slots=3) -> str:
 
     end_of_day = start_time.replace(hour=23, minute=59)
 
-    if not CALENDAR_FILE.exists():
+    if not os.path.exists(CALENDAR_FILE):
         return "✅ Весь день вільний!"
 
-    with open(CALENDAR_FILE, "r", encoding="utf-8") as f:
-        events = json.load(f)
+    try:
+        with open(CALENDAR_FILE, "r", encoding="utf-8") as f:
+            events = json.load(f)
+    except json.JSONDecodeError:
+        print(f"⚠️ Error: Could not parse calendar file as JSON")
+        return "❌ Помилка зчитування календаря."
 
     occupied = [
         (datetime.fromisoformat(e["start"]), datetime.fromisoformat(e["end"]))

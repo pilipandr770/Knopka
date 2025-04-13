@@ -151,12 +151,51 @@ def process_audio():
             )
         os.remove(temp_filename)
 
-        reply = ask_gpt(transcription.text)
+        # Get the transcribed text
+        text = transcription.text
+        
+        # Check if the text contains product or calendar related keywords
+        text_lower = text.lower()
+        
+        # Handle product-related queries directly
+        if any(keyword in text_lower for keyword in ["товар", "продукт", "склад", "інвентар", "наявність"]):
+            try:
+                if "список" in text_lower or "всі" in text_lower:
+                    reply = list_all_products()
+                else:
+                    # Try to extract product name
+                    import re
+                    product_match = re.search(r'(?:товар|продукт|наявність)\s+[""]?([^""]+)[""]?', text_lower)
+                    if product_match:
+                        product_name = product_match.group(1).strip()
+                        reply = get_product_info(product_name)
+                    else:
+                        # If no specific product mentioned, list all products
+                        reply = list_all_products()
+            except Exception as e:
+                print(f"Error handling product query: {e}")
+                reply = f"Виникла помилка при роботі з базою товарів: {str(e)}"
+        
+        # Handle calendar-related queries directly
+        elif any(keyword in text_lower for keyword in ["календар", "запис", "прийом", "вільні", "слоти", "встреча", "встречу", "встретиться", "записаться"]):
+            # Перенаправление на форму записи вместо попытки работы с календарем напрямую
+            site_url = request.host_url.rstrip('/')
+            booking_url = f"{site_url}/booking"
+            
+            # Подготовка ответа с ссылкой на форму бронирования
+            if "ru" in text_lower or "рус" in text_lower:
+                reply = f"Для записи на встречу, пожалуйста, заполните форму по ссылке: {booking_url}\n\nВы сможете выбрать удобную дату и время, а также указать тему встречи."
+            else:
+                reply = f"Для запису на зустріч, будь ласка, заповніть форму за посиланням: {booking_url}\n\nВи зможете вибрати зручну дату та час, а також вказати тему зустрічі."
+        
+        # For all other queries, use the OpenAI assistant
+        else:
+            reply = ask_gpt(text)
 
-        # Зберігаємо історію діалогу
+        # Save dialogue history
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
-            "question": transcription.text,
+            "question": text,
             "answer": reply
         }
         dialogues.setdefault(client_id, []).append(log_entry)
@@ -174,7 +213,7 @@ def process_audio():
             mimetype="audio/mpeg"
         )
         response.headers["X-Assistant-Answer"] = quote(reply)
-        response.headers["X-User-Text"] = quote(transcription.text)
+        response.headers["X-User-Text"] = quote(text)
         return response
 
     except Exception as e:
@@ -189,24 +228,72 @@ def process_text():
     if not text:
         return jsonify({"error": "Порожній запит"}), 400
 
-    instruction_path = "storage/instructions.txt"
-    assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
-    if os.path.exists(instruction_path):
-        with open(instruction_path, "r", encoding="utf-8") as f:
-            assistant_instructions = f.read().strip()
+    # Check if the text contains product or calendar related keywords
+    text_lower = text.lower()
+    
+    # Handle product-related queries directly
+    if any(keyword in text_lower for keyword in ["товар", "продукт", "склад", "інвентар", "наявність"]):
+        try:
+            if "список" in text_lower or "всі" in text_lower:
+                answer = list_all_products()
+            else:
+                # Try to extract product name
+                import re
+                product_match = re.search(r'(?:товар|продукт|наявність)\s+[""]?([^""]+)[""]?', text_lower)
+                if product_match:
+                    product_name = product_match.group(1).strip()
+                    answer = get_product_info(product_name)
+                else:
+                    # If no specific product mentioned, list all products
+                    answer = list_all_products()
+        except Exception as e:
+            print(f"Error handling product query: {e}")
+            answer = f"Виникла помилка при роботі з базою товарів: {str(e)}"
+    
+    # Handle calendar-related queries directly
+    elif any(keyword in text_lower for keyword in ["календар", "запис", "прийом", "вільні", "слоти", "встреча", "встречу", "встретиться", "записаться"]):
+        # Перенаправление на форму записи вместо попытки работы с календарем напрямую
+        site_url = request.host_url.rstrip('/')
+        booking_url = f"{site_url}/booking"
+        
+        # Подготовка ответа с ссылкой на форму бронирования
+        if "ru" in text_lower or "рус" in text_lower:
+            answer = f"Для записи на встречу, пожалуйста, заполните форму по ссылке: {booking_url}\n\nВы сможете выбрать удобную дату и время, а также указать тему встречи."
+        else:
+            answer = f"Для запису на зустріч, будь ласка, заповніть форму за посиланням: {booking_url}\n\nВи зможете вибрати зручну дату та час, а також вказати тему зустрічі."
+    
+    # For all other queries, use the OpenAI assistant
+    else:
+        instruction_path = "storage/instructions.txt"
+        assistant_instructions = "Ти — ввічливий асистент. Відповідай коротко й коректно."
+        if os.path.exists(instruction_path):
+            with open(instruction_path, "r", encoding="utf-8") as f:
+                assistant_instructions = f.read().strip()
 
-    knowledge = search_knowledgebase(text)
-    full_message = f"📌 Інструкція:\n{assistant_instructions}\n\n📚 Контекст із бази знань:\n{knowledge}\n\n🗣️ Питання користувача:\n{text}"
+        knowledge = search_knowledgebase(text)
+        full_message = f"📌 Інструкція:\n{assistant_instructions}\n\n📚 Контекст із бази знань:\n{knowledge}\n\n🗣️ Питання користувача:\n{text}"
 
-    thread = openai.beta.threads.create()
-    openai.beta.threads.messages.create(thread_id=thread.id, role="user", content=full_message)
-    run = openai.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
-    while openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id).status != "completed":
-        time.sleep(1)
+        thread = openai.beta.threads.create()
+        openai.beta.threads.messages.create(thread_id=thread.id, role="user", content=full_message)
+        run = openai.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANT_ID)
+        
+        # Wait for completion with timeout
+        start_time = time.time()
+        max_wait_time = 30  # Maximum wait time in seconds
+        
+        while time.time() - start_time < max_wait_time:
+            run_status = openai.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+            if run_status.status == "completed":
+                break
+            time.sleep(1)
+            
+        if run_status.status != "completed":
+            return jsonify({"answer": "Вибачте, асистент не встиг обробити ваш запит. Спробуйте ще раз."})
 
-    messages = openai.beta.threads.messages.list(thread_id=thread.id)
-    answer = messages.data[0].content[0].text.value.strip()
+        messages = openai.beta.threads.messages.list(thread_id=thread.id)
+        answer = messages.data[0].content[0].text.value.strip()
 
+    # Log the conversation
     log_entry = {"timestamp": datetime.utcnow().isoformat(), "question": text, "answer": answer}
     dialogues.setdefault(client_id, []).append(log_entry)
     with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
@@ -222,6 +309,105 @@ def clear_history():
     with open(DIALOGUES_FILE, "w", encoding="utf-8") as f:
         json.dump(dialogues, f, indent=2, ensure_ascii=False)
     return redirect(url_for("dashboard"))
+
+@app.route("/tts", methods=["GET"])
+def text_to_speech():
+    try:
+        text = request.args.get("text", "")
+        if not text:
+            return jsonify({"error": "Текст не вказано"}), 400
+
+        speech = openai.audio.speech.create(
+            model="tts-1",
+            voice="nova",
+            input=text
+        )
+
+        response = app.response_class(
+            response=speech.read(),
+            mimetype="audio/mpeg"
+        )
+        return response
+
+    except Exception as e:
+        print(f"[tts] Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/booking", methods=["GET", "POST"])
+def booking():
+    message = None
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        phone = request.form.get("phone", "")
+        date = request.form.get("date")
+        time = request.form.get("time")
+        topic = request.form.get("topic")
+        
+        # Создаем новую запись в календаре
+        booking_data = {
+            "title": f"Встреча: {name}",
+            "date": date,
+            "time": time,
+            "email": email,
+            "phone": phone, 
+            "topic": topic,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        
+        # Сохраняем в файл booking.json
+        booking_file = os.path.join("storage", "bookings.json")
+        bookings = []
+        if os.path.exists(booking_file):
+            try:
+                with open(booking_file, "r", encoding="utf-8") as f:
+                    bookings = json.load(f)
+            except json.JSONDecodeError:
+                bookings = []
+        
+        bookings.append(booking_data)
+        with open(booking_file, "w", encoding="utf-8") as f:
+            json.dump(bookings, f, indent=2, ensure_ascii=False)
+        
+        message = "Спасибо! Ваша заявка принята. Мы свяжемся с вами для подтверждения встречи."
+    
+    return render_template("booking.html", message=message)
+
+@app.route("/bookings")
+@require_login
+def view_bookings():
+    # Загружаем данные о бронированиях
+    booking_file = os.path.join("storage", "bookings.json")
+    bookings = []
+    if os.path.exists(booking_file):
+        try:
+            with open(booking_file, "r", encoding="utf-8") as f:
+                bookings = json.load(f)
+        except json.JSONDecodeError:
+            bookings = []
+    
+    return render_template("bookings.html", bookings=bookings)
+
+@app.route("/delete_booking", methods=["POST"])
+@require_login
+def delete_booking():
+    index = int(request.form.get("index", -1))
+    if index >= 0:
+        booking_file = os.path.join("storage", "bookings.json")
+        if os.path.exists(booking_file):
+            try:
+                with open(booking_file, "r", encoding="utf-8") as f:
+                    bookings = json.load(f)
+                
+                if 0 <= index < len(bookings):
+                    del bookings[index]
+                    
+                    with open(booking_file, "w", encoding="utf-8") as f:
+                        json.dump(bookings, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                print(f"Error deleting booking: {e}")
+    
+    return redirect(url_for("view_bookings"))
 
 def ask_gpt(prompt):
     thread = openai.beta.threads.create()
