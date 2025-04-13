@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-VECTOR_DB_FILE = Path("storage/vector_store.json")
+VECTOR_DB_FILE = Path("storage/knowledgebase/vector_store.json")
 
 def extract_text_from_website(base_url, max_pages=10):
     visited = set()
