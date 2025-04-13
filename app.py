@@ -14,7 +14,7 @@ from utils.auth import is_logged_in, require_login, ADMIN_USERNAME, ADMIN_PASSWO
 from utils.vector_store import search_knowledgebase
 from utils.products import get_product_info, add_product, list_all_products
 from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
-from config import OPENAI_API_KEY, OPENAI_ORG_ID, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings, is_render
+from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings, is_render
 from urllib.parse import quote
 
 # Создаем глобальный клиент OpenAI
@@ -44,8 +44,6 @@ try:
             
             # Также настраиваем модуль openai для обратной совместимости
             openai.api_key = OPENAI_API_KEY
-            if OPENAI_ORG_ID:
-                openai.organization = OPENAI_ORG_ID
             
             # Убедимся, что клиент доступен для импорта из других модулей
             openai.client = client
