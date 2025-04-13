@@ -4,3 +4,4 @@ openai
 python-dotenv
 numpy
 pandas
+requests>=2.0.0
