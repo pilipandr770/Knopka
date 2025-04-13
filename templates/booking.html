@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Запись на встречу{% endblock %}
+{% block title %}Booking{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
@@ -8,57 +8,42 @@
     <div class="col-md-8">
       <div class="card">
         <div class="card-header bg-primary text-white">
-          <h2 class="m-0">Запись на встречу</h2>
+          <h2 class="m-0">Booking</h2>
         </div>
         <div class="card-body">
-          {% if message %}
-          <div class="alert alert-success">
-            {{ message }}
-          </div>
-          {% endif %}
-          
-          <form method="post" action="/booking">
+          <p>Fill out the form below to book an appointment.</p>
+          <form method="POST">
             <div class="mb-3">
-              <label for="name" class="form-label">Ваше имя</label>
+              <label for="name" class="form-label">Name:</label>
               <input type="text" class="form-control" id="name" name="name" required>
             </div>
             
             <div class="mb-3">
-              <label for="email" class="form-label">Email для связи</label>
+              <label for="email" class="form-label">Email:</label>
               <input type="email" class="form-control" id="email" name="email" required>
             </div>
             
             <div class="mb-3">
-              <label for="phone" class="form-label">Номер телефона</label>
-              <input type="tel" class="form-control" id="phone" name="phone">
+              <label for="phone" class="form-label">Phone:</label>
+              <input type="text" class="form-control" id="phone" name="phone">
             </div>
             
             <div class="mb-3">
-              <label for="date" class="form-label">Дата встречи</label>
+              <label for="date" class="form-label">Date:</label>
               <input type="date" class="form-control" id="date" name="date" required>
             </div>
             
             <div class="mb-3">
-              <label for="time" class="form-label">Время встречи</label>
-              <select class="form-control" id="time" name="time" required>
-                <option value="">Выберите время</option>
-                <option value="10:00">10:00</option>
-                <option value="11:00">11:00</option>
-                <option value="12:00">12:00</option>
-                <option value="13:00">13:00</option>
-                <option value="14:00">14:00</option>
-                <option value="15:00">15:00</option>
-                <option value="16:00">16:00</option>
-                <option value="17:00">17:00</option>
-              </select>
+              <label for="time" class="form-label">Time:</label>
+              <input type="time" class="form-control" id="time" name="time" required>
             </div>
             
             <div class="mb-3">
-              <label for="topic" class="form-label">Тема встречи</label>
-              <textarea class="form-control" id="topic" name="topic" rows="3" required></textarea>
+              <label for="topic" class="form-label">Topic:</label>
+              <textarea class="form-control" id="topic" name="topic" rows="3"></textarea>
             </div>
             
-            <button type="submit" class="btn btn-primary">Отправить заявку</button>
+            <button type="submit" class="btn btn-primary">Submit</button>
           </form>
         </div>
       </div>

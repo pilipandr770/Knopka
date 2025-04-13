@@ -1,0 +1,26 @@
+{% extends "base_de.html" %}
+{% block content %}
+<h1>Buchung</h1>
+<p>Füllen Sie das folgende Formular aus, um einen Termin zu buchen.</p>
+<form method="POST">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required><br>
+
+    <label for="email">E-Mail:</label>
+    <input type="email" id="email" name="email" required><br>
+
+    <label for="phone">Telefon:</label>
+    <input type="text" id="phone" name="phone"><br>
+
+    <label for="date">Datum:</label>
+    <input type="date" id="date" name="date" required><br>
+
+    <label for="time">Uhrzeit:</label>
+    <input type="time" id="time" name="time" required><br>
+
+    <label for="topic">Thema:</label>
+    <textarea id="topic" name="topic"></textarea><br>
+
+    <button type="submit">Senden</button>
+</form>
+{% endblock %}
