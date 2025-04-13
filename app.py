@@ -3,6 +3,7 @@
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for
 from flask_cors import CORS
 import openai
+from openai import OpenAI  # Импортируем конструктор клиента напрямую
 import os
 import json
 import time
@@ -12,58 +13,35 @@ from utils.auth import is_logged_in, require_login, ADMIN_USERNAME, ADMIN_PASSWO
 from utils.vector_store import search_knowledgebase
 from utils.products import get_product_info, add_product, list_all_products
 from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
-from config import OPENAI_API_KEY, OPENAI_ORG_ID, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE
+from config import OPENAI_API_KEY, OPENAI_ORG_ID, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings
 from urllib.parse import quote
 
-# Отладочная информация о загруженных ключах
-print(f"API Key loaded: {'Yes' if OPENAI_API_KEY else 'No'}")
-if OPENAI_API_KEY:
-    print(f"API Key type: {'Project Key' if OPENAI_API_KEY.startswith('sk-proj-') else 'Regular Key'}")
-print(f"Assistant ID loaded: {'Yes' if ASSISTANT_ID else 'No'}")
+# Создаем глобальный клиент OpenAI
+client = None
+try:
+    # Инициализация клиента OpenAI с настройками из config
+    client = OpenAI(**openai_client_settings)
+    print("✓ OpenAI клиент успешно инициализирован")
+    
+    # Проверяем соединение
+    models = client.models.list()
+    print(f"✓ Успешное соединение с API. Доступны {len(models.data)} моделей")
+    
+    # Также настраиваем модуль openai для обратной совместимости
+    openai.api_key = OPENAI_API_KEY
+    if OPENAI_ORG_ID:
+        openai.organization = OPENAI_ORG_ID
+    
+    # Сохраняем клиент как глобальную переменную для использования в других модулях
+    openai.client = client
+except Exception as e:
+    print(f"✗ Ошибка при инициализации OpenAI клиента: {e}")
 
 app = Flask(__name__)
-app.secret_key = FLASK_SECRET_KEY
+app.secret_key = FLASK_SECRET_KEY  # Use the value from config
 CORS(app)
 
-# Настройка клиента OpenAI с учетом типа ключа
-if OPENAI_API_KEY:
-    try:
-        # Для ключей проекта (начинающихся с sk-proj-) используется новый метод инициализации
-        if OPENAI_API_KEY.startswith('sk-proj-'):
-            print("Initializing OpenAI client with project API key...")
-            client_args = {"api_key": OPENAI_API_KEY}
-            if OPENAI_ORG_ID:
-                client_args["organization"] = OPENAI_ORG_ID
-                
-            # Создаем клиента с правильными параметрами и сохраняем его в глобальной переменной
-            openai.client = openai.OpenAI(**client_args)
-            
-            # Также используем стандартную инициализацию для обратной совместимости
-            openai.api_key = OPENAI_API_KEY
-            if OPENAI_ORG_ID:
-                openai.organization = OPENAI_ORG_ID
-                
-        else:
-            # Стандартный метод инициализации для обычных ключей
-            print("Initializing OpenAI client with standard API key...")
-            openai.api_key = OPENAI_API_KEY
-            if OPENAI_ORG_ID:
-                openai.organization = OPENAI_ORG_ID
-                
-        # Проверка работоспособности API
-        try:
-            if hasattr(openai, "client") and openai.client:
-                test_models = openai.client.models.list()
-            else:
-                test_models = openai.models.list()
-            print("✓ OpenAI API connection successful")
-        except Exception as e:
-            print(f"✗ OpenAI API connection failed: {str(e)}")
-            
-    except Exception as e:
-        print(f"Error initializing OpenAI client: {str(e)}")
-
-# Остальной код без изменений
+# Остальной код без изменений...
 if os.path.exists(DIALOGUES_FILE):
     with open(DIALOGUES_FILE, "r", encoding="utf-8-sig") as f:
         dialogues = json.load(f)

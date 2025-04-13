@@ -54,25 +54,34 @@ def chunk_text(text, max_tokens=500):
 
 def embed_text(text):
     try:
-        # Проверяем, настроен ли клиент как глобальный объект (для совместимости с обоими API)
+        # Проверяем доступность глобального клиента
         if hasattr(openai, "client") and openai.client:
-            # Используем клиентский метод для ключей проекта
-            res = openai.client.embeddings.create(
-                model=EMBED_MODEL,
-                input=text
-            )
+            try:
+                # Используем глобальный клиент для API проекта
+                res = openai.client.embeddings.create(
+                    model=EMBED_MODEL,
+                    input=text
+                )
+                return res.data[0].embedding
+            except Exception as e:
+                print(f"❌ Ошибка при использовании клиента для генерации эмбеддингов: {str(e)}")
+                # Если не получилось с клиентом, пробуем стандартный метод
+                res = openai.embeddings.create(
+                    model=EMBED_MODEL,
+                    input=text
+                )
+                return res.data[0].embedding
         else:
-            # Используем стандартный метод для обычных ключей API или глобальной настройки
+            # Если клиент не настроен, используем стандартный метод
             res = openai.embeddings.create(
                 model=EMBED_MODEL,
                 input=text
             )
-        return res.data[0].embedding
+            return res.data[0].embedding
     except Exception as e:
-        print(f"❌ Ошибка при создании векторного представления текста: {e}")
-        # Возвращаем нулевой вектор заданной длины в случае ошибки
-        # Это позволит продолжить работу приложения с ограниченной функциональностью
-        return [0.0] * 1536  # Стандартная длина вектора для модели text-embedding-3-small
+        print(f"❌ Критическая ошибка при генерации эмбеддингов: {str(e)}")
+        # Возвращаем нулевой вектор для совместимости
+        return [0.0] * 1536  # Стандартная длина для text-embedding-3-small
 
 def index_knowledgebase():
     global vector_db
@@ -98,8 +107,6 @@ def index_knowledgebase():
         json.dump(vector_db, f, indent=2, ensure_ascii=False)
     print("✅ Векторна база знань оновлена.")
 
-# utils/vector_store.py (додати внизу)
-
 from numpy import dot
 from numpy.linalg import norm
 import numpy as np
@@ -108,13 +115,17 @@ def cosine_similarity(vec1, vec2):
     return dot(vec1, vec2) / (norm(vec1) * norm(vec2))
 
 def search_knowledgebase(query, top_k=3):
-    query_vec = embed_text(query)
-    scored = []
+    try:
+        query_vec = embed_text(query)
+        scored = []
 
-    for item in vector_db:
-        score = cosine_similarity(query_vec, item["embedding"])
-        scored.append((score, item))
+        for item in vector_db:
+            score = cosine_similarity(query_vec, item["embedding"])
+            scored.append((score, item))
 
-    scored.sort(reverse=True, key=lambda x: x[0])
-    top_chunks = [item["text"] for score, item in scored[:top_k]]
-    return "\n\n".join(top_chunks)
+        scored.sort(reverse=True, key=lambda x: x[0])
+        top_chunks = [item["text"] for score, item in scored[:top_k]]
+        return "\n\n".join(top_chunks)
+    except Exception as e:
+        print(f"❌ Ошибка при поиске в базе знаний: {str(e)}")
+        return "При поиске в базе знаний произошла ошибка. Пожалуйста, попробуйте задать вопрос иначе."
