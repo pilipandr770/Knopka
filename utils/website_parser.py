@@ -54,6 +54,8 @@ def index_text_blocks(texts, source="website"):
                 count += 1
             except Exception as e:
                 print(f"❌ Skip block: {e}")
+    # Ensure the directory exists before writing the file
+    VECTOR_DB_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(VECTOR_DB_FILE, "w", encoding="utf-8") as f:
         json.dump(vector_db, f, indent=2, ensure_ascii=False)
     return count
