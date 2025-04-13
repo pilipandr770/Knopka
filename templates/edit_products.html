@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Редактирование продуктов</h1>
+    {% if message %}
+        <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+    <form method="POST">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Название</th>
+                    <th>Количество</th>
+                    <th>Описание</th>
+                    <th>Цена</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td><input type="text" name="products[{{ loop.index0 }}][Название]" value="{{ product['Название'] }}" class="form-control" required></td>
+                    <td><input type="number" name="products[{{ loop.index0 }}][Количество]" value="{{ product['Количество'] }}" class="form-control" required></td>
+                    <td><input type="text" name="products[{{ loop.index0 }}][Описание]" value="{{ product['Описание'] }}" class="form-control"></td>
+                    <td><input type="number" step="0.01" name="products[{{ loop.index0 }}][Цена]" value="{{ product['Цена'] }}" class="form-control" required></td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td><input type="text" name="products[{{ products|length }}][Название]" placeholder="Новое название" class="form-control"></td>
+                    <td><input type="number" name="products[{{ products|length }}][Количество]" placeholder="0" class="form-control"></td>
+                    <td><input type="text" name="products[{{ products|length }}][Описание]" placeholder="Новое описание" class="form-control"></td>
+                    <td><input type="number" step="0.01" name="products[{{ products|length }}][Цена]" placeholder="0.00" class="form-control"></td>
+                </tr>
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+    </form>
+</div>
+{% endblock %}

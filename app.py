@@ -17,6 +17,7 @@ from utils.calendar import create_calendar_event, list_calendar_events, find_fre
 from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings, is_render
 from urllib.parse import quote
 from utils.website_parser import extract_text_from_website, index_text_blocks
+import csv
 
 # Создаем глобальный клиент OpenAI
 client = None
@@ -452,6 +453,30 @@ def delete_booking():
 @require_login
 def parse_website():
     return "❌ Функция парсинга сайта отключена", 400
+
+@app.route("/edit_products", methods=["GET", "POST"])
+@require_login
+def edit_products():
+    products_file = "storage/products.csv"
+    message = None
+    products = []
+
+    if os.path.exists(products_file):
+        with open(products_file, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            products = list(reader)
+
+    if request.method == "POST":
+        updated_products = request.form.getlist("products")
+        with open(products_file, "w", encoding="utf-8", newline="") as f:
+            fieldnames = ["Название", "Количество", "Описание", "Цена"]
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for product in updated_products:
+                writer.writerow(product)
+        message = "Продукты успешно обновлены!"
+
+    return t("edit_products", products=products, message=message)
 
 def ask_gpt(prompt):
     try:
