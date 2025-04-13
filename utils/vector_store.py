@@ -53,11 +53,26 @@ def chunk_text(text, max_tokens=500):
     return chunks
 
 def embed_text(text):
-    res = openai.embeddings.create(
-        model=EMBED_MODEL,
-        input=text
-    )
-    return res.data[0].embedding
+    try:
+        # Проверяем, настроен ли клиент как глобальный объект (для совместимости с обоими API)
+        if hasattr(openai, "client") and openai.client:
+            # Используем клиентский метод для ключей проекта
+            res = openai.client.embeddings.create(
+                model=EMBED_MODEL,
+                input=text
+            )
+        else:
+            # Используем стандартный метод для обычных ключей API или глобальной настройки
+            res = openai.embeddings.create(
+                model=EMBED_MODEL,
+                input=text
+            )
+        return res.data[0].embedding
+    except Exception as e:
+        print(f"❌ Ошибка при создании векторного представления текста: {e}")
+        # Возвращаем нулевой вектор заданной длины в случае ошибки
+        # Это позволит продолжить работу приложения с ограниченной функциональностью
+        return [0.0] * 1536  # Стандартная длина вектора для модели text-embedding-3-small
 
 def index_knowledgebase():
     global vector_db

@@ -35,10 +35,10 @@ if OPENAI_API_KEY:
             if OPENAI_ORG_ID:
                 client_args["organization"] = OPENAI_ORG_ID
                 
-            # Создаем клиента с правильными параметрами
-            openai_client = openai.OpenAI(**client_args)
+            # Создаем клиента с правильными параметрами и сохраняем его в глобальной переменной
+            openai.client = openai.OpenAI(**client_args)
             
-            # Используем глобальную переменную для последующих вызовов
+            # Также используем стандартную инициализацию для обратной совместимости
             openai.api_key = OPENAI_API_KEY
             if OPENAI_ORG_ID:
                 openai.organization = OPENAI_ORG_ID
@@ -52,7 +52,10 @@ if OPENAI_API_KEY:
                 
         # Проверка работоспособности API
         try:
-            test_models = openai.models.list()
+            if hasattr(openai, "client") and openai.client:
+                test_models = openai.client.models.list()
+            else:
+                test_models = openai.models.list()
             print("✓ OpenAI API connection successful")
         except Exception as e:
             print(f"✗ OpenAI API connection failed: {str(e)}")
