@@ -32,6 +32,67 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
     document.body.appendChild(assistantUI);
 
+    const registerButtonInChat = document.createElement("button");
+    registerButtonInChat.className = "register-button-in-chat";
+    registerButtonInChat.innerHTML = "📅 Записаться на прием";
+    registerButtonInChat.title = "Записаться на прием";
+    document.getElementById("assistant-controls").appendChild(registerButtonInChat);
+
+    registerButtonInChat.addEventListener("click", () => {
+      const bookingForm = document.createElement("div");
+      bookingForm.className = "booking-form";
+      bookingForm.innerHTML = `
+        <div class="form-header">
+          <span>Запись на прием</span>
+          <button class="close-form">❌</button>
+        </div>
+        <form id="booking-form">
+          <label>Имя: <input type="text" name="name" required /></label>
+          <label>Email: <input type="email" name="email" required /></label>
+          <label>Телефон: <input type="tel" name="phone" required /></label>
+          <label>Дата: <input type="date" name="date" required /></label>
+          <label>Время: <input type="time" name="time" required /></label>
+          <label>Тема: <input type="text" name="topic" required /></label>
+          <button type="submit">Отправить</button>
+        </form>
+      `;
+      document.body.appendChild(bookingForm);
+
+      bookingForm.querySelector(".close-form").addEventListener("click", () => {
+        document.body.removeChild(bookingForm);
+      });
+
+      bookingForm.querySelector("#booking-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        fetch("/booking", {
+          method: "POST",
+          body: formData
+        }).then(() => {
+          alert("Спасибо! Ваша заявка принята.");
+          document.body.removeChild(bookingForm);
+        });
+      });
+    });
+
+    const chatStyle = document.createElement("style");
+    chatStyle.innerHTML = `
+      .register-button-in-chat {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      .register-button-in-chat:hover {
+        background: #45a049;
+      }
+    `;
+    document.head.appendChild(chatStyle);
+
     function appendMessage(text, isUser = false) {
       const msg = document.createElement("div");
       msg.className = isUser ? "chat-message user" : "chat-message assistant";
@@ -443,7 +504,132 @@ document.addEventListener("DOMContentLoaded", () => {
         right: 5%;
         bottom: 80px;
       }
-    }`;
+    }
 
+    .register-button {
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      border-radius: 50%;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .register-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .register-button:active {
+      transform: scale(0.95);
+    }
+
+    .booking-form {
+      position: fixed;
+      bottom: 20%;
+      right: 20%;
+      width: 300px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      padding: 20px;
+      z-index: 10000;
+    }
+
+    .form-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .form-header button {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .booking-form label {
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .booking-form input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .booking-form button {
+      width: 100%;
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .booking-form button:hover {
+      background: #45a049;
+    }
+    `;
     document.head.appendChild(style);
+
+    const registerButton = document.createElement("button");
+    registerButton.className = "register-button";
+    registerButton.innerHTML = "📅 Записаться";
+    registerButton.title = "Записаться на прием";
+    document.body.appendChild(registerButton);
+
+    registerButton.addEventListener("click", () => {
+      const bookingForm = document.createElement("div");
+      bookingForm.className = "booking-form";
+      bookingForm.innerHTML = `
+        <div class="form-header">
+          <span>Запись на прием</span>
+          <button class="close-form">❌</button>
+        </div>
+        <form id="booking-form">
+          <label>Имя: <input type="text" name="name" required /></label>
+          <label>Email: <input type="email" name="email" required /></label>
+          <label>Телефон: <input type="tel" name="phone" required /></label>
+          <label>Дата: <input type="date" name="date" required /></label>
+          <label>Время: <input type="time" name="time" required /></label>
+          <label>Тема: <input type="text" name="topic" required /></label>
+          <button type="submit">Отправить</button>
+        </form>
+      `;
+      document.body.appendChild(bookingForm);
+
+      bookingForm.querySelector(".close-form").addEventListener("click", () => {
+        document.body.removeChild(bookingForm);
+      });
+
+      bookingForm.querySelector("#booking-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        fetch("/booking", {
+          method: "POST",
+          body: formData
+        }).then(() => {
+          alert("Спасибо! Ваша заявка принята.");
+          document.body.removeChild(bookingForm);
+        });
+      });
+    });
   });
