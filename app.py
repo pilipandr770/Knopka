@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 from dotenv import load_dotenv
 from utils.auth import is_logged_in, require_login, ADMIN_USERNAME, ADMIN_PASSWORD
-from utils.vector_store import search_knowledgebase
+from utils.vector_store import search_knowledgebase, index_knowledgebase
 from utils.products import get_product_info, add_product, list_all_products
 from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
 from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings, is_render
@@ -511,4 +511,5 @@ def ask_gpt(prompt):
         return f"Извините, произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже или свяжитесь с администратором."
 
 if __name__ == "__main__":
+    index_knowledgebase()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
