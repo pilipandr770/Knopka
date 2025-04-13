@@ -56,6 +56,12 @@
   <button type="submit">💾 Зберегти</button>
 </form>
 
+<h3>🌐 Завантажити знання з сайту</h3>
+<form method="POST" action="/parse_website">
+  <input name="website_url" type="url" required placeholder="https://example.com" style="width: 400px;">
+  <button type="submit">🔎 Сканувати сайт</button>
+</form>
+
 <hr>
 {% for client_id, logs in dialogues.items() %}
   <h3>👤 Клієнт: {{ client_id }}</h3>

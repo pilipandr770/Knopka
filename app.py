@@ -16,6 +16,7 @@ from utils.products import get_product_info, add_product, list_all_products
 from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
 from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings, is_render
 from urllib.parse import quote
+from utils.website_parser import extract_text_from_website, index_text_blocks
 
 # Создаем глобальный клиент OpenAI
 client = None
@@ -457,6 +458,20 @@ def delete_booking():
                 print(f"Error deleting booking: {e}")
     
     return redirect(url_for("view_bookings"))
+
+@app.route("/parse_website", methods=["POST"])
+@require_login
+def parse_website():
+    url = request.form.get("website_url")
+    if not url:
+        return "❌ URL не вказано", 400
+    try:
+        text_blocks = extract_text_from_website(url)
+        count = index_text_blocks(text_blocks, source=url)
+        return f"✅ Успішно додано {count} блоків знань з {url}", 200
+    except Exception as e:
+        print(f"[parse_website] Error: {e}")
+        return f"❌ Помилка при обробці сайту: {str(e)}", 500
 
 def ask_gpt(prompt):
     try:
