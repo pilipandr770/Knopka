@@ -15,12 +15,25 @@ from utils.calendar import create_calendar_event, list_calendar_events, find_fre
 from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE
 from urllib.parse import quote
 
-load_dotenv()  # Load environment variables first
+# Добавляем отладочный вывод для проверки загрузки ключей
+print(f"Debug - API Key loaded: {'Loaded correctly' if OPENAI_API_KEY else 'MISSING!'}")
+print(f"Debug - Assistant ID loaded: {'Loaded correctly' if ASSISTANT_ID else 'MISSING!'}")
 
 app = Flask(__name__)
 app.secret_key = FLASK_SECRET_KEY  # Use the value from config
 CORS(app)
 openai.api_key = OPENAI_API_KEY
+
+# Проверка API ключа OpenAI перед запуском
+if not OPENAI_API_KEY:
+    print("ВНИМАНИЕ! OpenAI API ключ не обнаружен в переменных окружения.")
+    print("Пожалуйста, убедитесь, что переменные окружения настроены правильно.")
+    print("На Render: Настройте переменную окружения OPENAI_API_KEY в настройках вашего сервиса.")
+    # Не завершаем приложение, чтобы оно могло запуститься для отладки
+
+if not ASSISTANT_ID:
+    print("ВНИМАНИЕ! ID ассистента не обнаружен в переменных окружения.")
+    print("На Render: Настройте переменную окружения ASSISTANT_ID в настройках вашего сервиса.")
 
 if os.path.exists(DIALOGUES_FILE):
     with open(DIALOGUES_FILE, "r", encoding="utf-8-sig") as f:
