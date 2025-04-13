@@ -128,7 +128,7 @@ def instructions():
     content = ""
     message = None
     if request.method == "POST":
-        content = request.form.get("instructions", "")
+        content = request.form.get("instructions", "")[:10000]  # Ограничение на 10 000 знаков
         with open(instruction_file, "w", encoding="utf-8") as f:
             f.write(content)
         message = {
@@ -144,18 +144,7 @@ def instructions():
 @app.route("/upload_knowledge", methods=["GET", "POST"])
 @require_login
 def upload_knowledge():
-    message = None
-    if request.method == "POST":
-        file = request.files.get("file")
-        if file:
-            filename = file.filename
-            file.save(os.path.join("storage", "knowledgebase", filename))
-            message = {
-                "uk": f"Файл '{filename}' успішно завантажено!",
-                "en": f"File '{filename}' uploaded successfully!",
-                "de": f"Datei '{filename}' erfolgreich hochgeladen!"
-            }.get(get_lang(), "Done")
-    return t("upload_knowledge", message=message)
+    return redirect(url_for("dashboard"))
 
 @app.route("/set_widget_settings", methods=["POST"])
 @require_login
@@ -462,16 +451,7 @@ def delete_booking():
 @app.route("/parse_website", methods=["POST"])
 @require_login
 def parse_website():
-    url = request.form.get("website_url")
-    if not url:
-        return "❌ URL не вказано", 400
-    try:
-        text_blocks = extract_text_from_website(url)
-        count = index_text_blocks(text_blocks, source=url)
-        return f"✅ Успішно додано {count} блоків знань з {url}", 200
-    except Exception as e:
-        print(f"[parse_website] Error: {e}")
-        return f"❌ Помилка при обробці сайту: {str(e)}", 500
+    return "❌ Функция парсинга сайта отключена", 400
 
 def ask_gpt(prompt):
     try:
