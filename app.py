@@ -12,29 +12,55 @@ from utils.auth import is_logged_in, require_login, ADMIN_USERNAME, ADMIN_PASSWO
 from utils.vector_store import search_knowledgebase
 from utils.products import get_product_info, add_product, list_all_products
 from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
-from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE
+from config import OPENAI_API_KEY, OPENAI_ORG_ID, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE
 from urllib.parse import quote
 
-# Добавляем отладочный вывод для проверки загрузки ключей
-print(f"Debug - API Key loaded: {'Loaded correctly' if OPENAI_API_KEY else 'MISSING!'}")
-print(f"Debug - Assistant ID loaded: {'Loaded correctly' if ASSISTANT_ID else 'MISSING!'}")
+# Отладочная информация о загруженных ключах
+print(f"API Key loaded: {'Yes' if OPENAI_API_KEY else 'No'}")
+if OPENAI_API_KEY:
+    print(f"API Key type: {'Project Key' if OPENAI_API_KEY.startswith('sk-proj-') else 'Regular Key'}")
+print(f"Assistant ID loaded: {'Yes' if ASSISTANT_ID else 'No'}")
 
 app = Flask(__name__)
-app.secret_key = FLASK_SECRET_KEY  # Use the value from config
+app.secret_key = FLASK_SECRET_KEY
 CORS(app)
-openai.api_key = OPENAI_API_KEY
 
-# Проверка API ключа OpenAI перед запуском
-if not OPENAI_API_KEY:
-    print("ВНИМАНИЕ! OpenAI API ключ не обнаружен в переменных окружения.")
-    print("Пожалуйста, убедитесь, что переменные окружения настроены правильно.")
-    print("На Render: Настройте переменную окружения OPENAI_API_KEY в настройках вашего сервиса.")
-    # Не завершаем приложение, чтобы оно могло запуститься для отладки
+# Настройка клиента OpenAI с учетом типа ключа
+if OPENAI_API_KEY:
+    try:
+        # Для ключей проекта (начинающихся с sk-proj-) используется новый метод инициализации
+        if OPENAI_API_KEY.startswith('sk-proj-'):
+            print("Initializing OpenAI client with project API key...")
+            client_args = {"api_key": OPENAI_API_KEY}
+            if OPENAI_ORG_ID:
+                client_args["organization"] = OPENAI_ORG_ID
+                
+            # Создаем клиента с правильными параметрами
+            openai_client = openai.OpenAI(**client_args)
+            
+            # Используем глобальную переменную для последующих вызовов
+            openai.api_key = OPENAI_API_KEY
+            if OPENAI_ORG_ID:
+                openai.organization = OPENAI_ORG_ID
+                
+        else:
+            # Стандартный метод инициализации для обычных ключей
+            print("Initializing OpenAI client with standard API key...")
+            openai.api_key = OPENAI_API_KEY
+            if OPENAI_ORG_ID:
+                openai.organization = OPENAI_ORG_ID
+                
+        # Проверка работоспособности API
+        try:
+            test_models = openai.models.list()
+            print("✓ OpenAI API connection successful")
+        except Exception as e:
+            print(f"✗ OpenAI API connection failed: {str(e)}")
+            
+    except Exception as e:
+        print(f"Error initializing OpenAI client: {str(e)}")
 
-if not ASSISTANT_ID:
-    print("ВНИМАНИЕ! ID ассистента не обнаружен в переменных окружения.")
-    print("На Render: Настройте переменную окружения ASSISTANT_ID в настройках вашего сервиса.")
-
+# Остальной код без изменений
 if os.path.exists(DIALOGUES_FILE):
     with open(DIALOGUES_FILE, "r", encoding="utf-8-sig") as f:
         dialogues = json.load(f)
