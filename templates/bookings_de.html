@@ -4,7 +4,14 @@
 <p>Hier ist die Liste aller Buchungen:</p>
 <ul>
     {% for booking in bookings %}
-    <li>{{ booking.name }} - {{ booking.date }} um {{ booking.time }}</li>
+    <li>
+      <strong>Name:</strong> {{ booking.name }}<br>
+      <strong>Email:</strong> {{ booking.email }}<br>
+      <strong>Phone:</strong> {{ booking.phone }}<br>
+      <strong>Date:</strong> {{ booking.date }}<br>
+      <strong>Time:</strong> {{ booking.time }}<br>
+      <strong>Topic:</strong> {{ booking.topic }}
+    </li>
     {% endfor %}
 </ul>
 {% endblock %}
