@@ -16,7 +16,12 @@ KB_DIR.mkdir(parents=True, exist_ok=True)
 # Завантаження або створення словника
 if VECTOR_DB_FILE.exists():
     with open(VECTOR_DB_FILE, "r", encoding="utf-8") as f:
-        vector_db = json.load(f)
+        try:
+            vector_db = json.load(f)
+            if not isinstance(vector_db, list):
+                vector_db = []
+        except json.JSONDecodeError:
+            vector_db = []
 else:
     vector_db = []
 
@@ -68,14 +73,12 @@ def embed_text(text):
                 return res.data[0].embedding
             except Exception as e:
                 print(f"❌ Ошибка при использовании клиента для генерации эмбеддингов: {str(e)}")
-                # Если не получилось с клиентом, пробуем стандартный метод
                 res = openai.embeddings.create(
                     model=EMBED_MODEL,
                     input=text
                 )
                 return res.data[0].embedding
         else:
-            # Если клиент не настроен, используем стандартный метод
             res = openai.embeddings.create(
                 model=EMBED_MODEL,
                 input=text
@@ -83,11 +86,13 @@ def embed_text(text):
             return res.data[0].embedding
     except Exception as e:
         print(f"❌ Критическая ошибка при генерации эмбеддингов: {str(e)}")
-        # Возвращаем нулевой вектор для совместимости
-        return [0.0] * 1536  # Стандартная длина для text-embedding-3-small
+        return [0.0] * 1536
 
 def index_knowledgebase():
     global vector_db
+    new_entries = []
+
+    # Index files from knowledgebase directory
     for file in KB_DIR.iterdir():
         text = read_file(file)
         if not text:
@@ -96,7 +101,7 @@ def index_knowledgebase():
         for chunk in chunks:
             try:
                 vector = embed_text(chunk)
-                vector_db.append({
+                new_entries.append({
                     "id": str(uuid4()),
                     "text": chunk,
                     "embedding": vector,
@@ -105,7 +110,7 @@ def index_knowledgebase():
             except Exception as e:
                 print(f"❌ Error embedding chunk: {e}")
 
-    # Добавим инструкции из instructions.txt в базу знаний
+    # Index instructions
     instruction_file = Path("storage/instructions.txt")
     if instruction_file.exists():
         with open(instruction_file, "r", encoding="utf-8") as f:
@@ -115,7 +120,7 @@ def index_knowledgebase():
                 for chunk in chunks:
                     try:
                         vector = embed_text(chunk)
-                        vector_db.append({
+                        new_entries.append({
                             "id": str(uuid4()),
                             "text": chunk,
                             "embedding": vector,
@@ -123,6 +128,9 @@ def index_knowledgebase():
                         })
                     except Exception as e:
                         print(f"❌ Error embedding instruction chunk: {e}")
+
+    # Update vector_db with new entries
+    vector_db.extend(new_entries)
 
     # Save to disk
     with open(VECTOR_DB_FILE, "w", encoding="utf-8") as f:
@@ -133,8 +141,45 @@ from numpy import dot
 from numpy.linalg import norm
 import numpy as np
 
-def cosine_similarity(vec1, vec2):
-    return dot(vec1, vec2) / (norm(vec1) * norm(vec2))
+def cosine_similarity(v1, v2):
+    if not v1 or not v2:
+        return 0
+    return dot(v1, v2) / (norm(v1) * norm(v2))
+
+def search_similar(query, top_k=3):
+    try:
+        query_embedding = embed_text(query)
+        
+        similarities = []
+        for entry in vector_db:
+            score = cosine_similarity(query_embedding, entry["embedding"])
+            similarities.append((score, entry))
+        
+        # Sort by similarity score in descending order
+        similarities.sort(key=lambda x: x[0], reverse=True)
+        
+        # Return top k results
+        results = []
+        for score, entry in similarities[:top_k]:
+            results.append({
+                "text": entry["text"],
+                "source": entry["source"],
+                "score": float(score)
+            })
+        return results
+    except Exception as e:
+        print(f"❌ Error during similarity search: {str(e)}")
+        return []
+
+def get_context(query, min_similarity=0.7):
+    results = search_similar(query)
+    context = []
+    
+    for result in results:
+        if result["score"] >= min_similarity:
+            context.append(result["text"])
+    
+    return " ".join(context)
 
 def search_knowledgebase(query, top_k=3):
     try:

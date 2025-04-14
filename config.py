@@ -1,8 +1,9 @@
 import os
 from dotenv import load_dotenv
 
-# Загрузка переменных из .env, если файл существует
-load_dotenv()
+# Проверяем, существует ли .env файл, и загружаем его только локально
+if os.path.exists(".env"):
+    load_dotenv()
 
 # Проверяем, запущено ли приложение на Render
 is_render = os.getenv("RENDER") is not None

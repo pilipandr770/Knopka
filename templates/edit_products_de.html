@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "base_de.html" %}
 {% block content %}
 <div class="container mt-5">
-    <h2>Edit Products</h2>
+    <h2>Produkte bearbeiten</h2>
     {% if message %}
     <div class="alert alert-info">{{ message }}</div>
     {% endif %}
@@ -11,11 +11,11 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Product Name</th>
-                        <th>Quantity</th>
-                        <th>Description</th>
-                        <th>Price</th>
-                        <th>Actions</th>
+                        <th>Produktname</th>
+                        <th>Menge</th>
+                        <th>Beschreibung</th>
+                        <th>Preis</th>
+                        <th>Aktionen</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -25,20 +25,20 @@
                         <td><input type="number" name="quantity_{{ loop.index0 }}" value="{{ product.Количество }}" class="form-control"></td>
                         <td><input type="text" name="description_{{ loop.index0 }}" value="{{ product.Описание }}" class="form-control"></td>
                         <td><input type="number" step="0.01" name="price_{{ loop.index0 }}" value="{{ product.Цена }}" class="form-control"></td>
-                        <td><button type="submit" name="delete" value="{{ product.Название }}" class="btn btn-danger">Delete</button></td>
+                        <td><button type="submit" name="delete" value="{{ product.Название }}" class="btn btn-danger">Löschen</button></td>
                     </tr>
                     {% endfor %}
                     <tr>
-                        <td><input type="text" name="new_name" placeholder="New product name" class="form-control"></td>
-                        <td><input type="number" name="new_quantity" placeholder="Quantity" class="form-control"></td>
-                        <td><input type="text" name="new_description" placeholder="Description" class="form-control"></td>
-                        <td><input type="number" step="0.01" name="new_price" placeholder="Price" class="form-control"></td>
-                        <td><button type="submit" name="add" value="true" class="btn btn-success">Add</button></td>
+                        <td><input type="text" name="new_name" placeholder="Neuer Produktname" class="form-control"></td>
+                        <td><input type="number" name="new_quantity" placeholder="Menge" class="form-control"></td>
+                        <td><input type="text" name="new_description" placeholder="Beschreibung" class="form-control"></td>
+                        <td><input type="number" step="0.01" name="new_price" placeholder="Preis" class="form-control"></td>
+                        <td><button type="submit" name="add" value="true" class="btn btn-success">Hinzufügen</button></td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <button type="submit" class="btn btn-primary">Änderungen speichern</button>
     </form>
 </div>
 {% endblock %}

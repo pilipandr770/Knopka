@@ -16,10 +16,15 @@ from utils.products import get_product_info, add_product, list_all_products
 from utils.calendar import create_calendar_event, list_calendar_events, find_free_slots
 from config import OPENAI_API_KEY, ASSISTANT_ID, FLASK_SECRET_KEY, DIALOGUES_FILE, openai_client_settings, is_render
 from urllib.parse import quote
-from utils.website_parser import extract_text_from_website, index_text_blocks
 import csv
 
-# Создаем глобальный клиент OpenAI
+def read_instructions():
+    instruction_file = "storage/instructions.txt"
+    if os.path.exists(instruction_file):
+        with open(instruction_file, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    return None
+
 client = None
 try:
     print("\n=== Инициализация OpenAI клиента ===")
@@ -51,11 +56,20 @@ try:
             openai.client = client
             print("✓ Глобальный клиент настроен для всех модулей")
             
-            # Проверяем, что ассистент доступен
+            # Проверяем, что ассистент доступен и применяем инструкции
             if ASSISTANT_ID:
                 try:
                     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
                     print(f"✓ Ассистент найден и доступен: {assistant.name}")
+                    
+                    # Читаем и применяем инструкции
+                    instructions = read_instructions()
+                    if instructions:
+                        assistant = client.beta.assistants.update(
+                            ASSISTANT_ID,
+                            instructions=instructions
+                        )
+                        print("✓ Инструкции успешно применены к ассистенту")
                 except Exception as assistant_error:
                     print(f"✗ Ошибка при проверке ассистента: {assistant_error}")
             else:
@@ -454,24 +468,77 @@ def parse_website():
 @app.route("/edit_products", methods=["GET", "POST"])
 @require_login
 def edit_products():
-    products_file = "storage/products.csv"
     message = None
-    products = []
+    if request.method == "POST":
+        if "delete" in request.form:
+            product_name = request.form["delete"]
+            try:
+                with open("storage/products.csv", "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    products = [row for row in reader if row["Название"] != product_name]
+                
+                with open("storage/products.csv", "w", encoding="utf-8", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=["Название", "Количество", "Описание", "Цена"])
+                    writer.writeheader()
+                    writer.writerows(products)
+                message = "Product deleted successfully"
+            except Exception as e:
+                message = f"Error deleting product: {str(e)}"
+        
+        elif "add" in request.form:
+            new_product = {
+                "Название": request.form.get("new_name", ""),
+                "Количество": request.form.get("new_quantity", "0"),
+                "Описание": request.form.get("new_description", ""),
+                "Цена": request.form.get("new_price", "0")
+            }
+            if new_product["Название"]:
+                try:
+                    with open("storage/products.csv", "a", encoding="utf-8", newline="") as f:
+                        writer = csv.DictWriter(f, fieldnames=["Название", "Количество", "Описание", "Цена"])
+                        if f.tell() == 0:
+                            writer.writeheader()
+                        writer.writerow(new_product)
+                    message = "Product added successfully"
+                except Exception as e:
+                    message = f"Error adding product: {str(e)}"
+        else:
+            try:
+                products = []
+                form_data = request.form
+                i = 0
+                while f"name_{i}" in form_data:
+                    product = {
+                        "Название": form_data[f"name_{i}"],
+                        "Количество": form_data[f"quantity_{i}"],
+                        "Описание": form_data[f"description_{i}"],
+                        "Цена": form_data[f"price_{i}"]
+                    }
+                    products.append(product)
+                    i += 1
+                
+                with open("storage/products.csv", "w", encoding="utf-8", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=["Название", "Количество", "Описание", "Цена"])
+                    writer.writeheader()
+                    writer.rows(products)
+                message = "Changes saved successfully"
+            except Exception as e:
+                message = f"Error saving changes: {str(e)}"
 
-    if os.path.exists(products_file):
-        with open(products_file, "r", encoding="utf-8") as f:
+    # Read current products for display
+    try:
+        with open("storage/products.csv", "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             products = list(reader)
-
-    if request.method == "POST":
-        updated_products = request.form.getlist("products")
-        with open(products_file, "w", encoding="utf-8", newline="") as f:
-            fieldnames = ["Название", "Количество", "Описание", "Цена"]
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+    except FileNotFoundError:
+        # Create the file if it doesn't exist
+        products = []
+        with open("storage/products.csv", "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["Название", "Количество", "Описание", "Цена"])
             writer.writeheader()
-            for product in updated_products:
-                writer.writerow(product)
-        message = "Продукты успешно обновлены!"
+    except Exception as e:
+        products = []
+        message = f"Error reading products: {str(e)}"
 
     return t("edit_products", products=products, message=message)
 
