@@ -283,7 +283,7 @@ def process_text():
 
     # Check if the text contains product or calendar related keywords
     text_lower = text.lower()
-    
+
     # Handle product-related queries directly
     if any(keyword in text_lower for keyword in ["товар", "продукт", "склад", "інвентар", "наявність"]):
         try:
@@ -292,7 +292,7 @@ def process_text():
             else:
                 # Try to extract product name
                 import re
-                product_match = re.search(r'(?:товар|продукт|наявність)\s+[""]?([^""]+)[""]?', text_lower)
+                product_match = re.search(r'(?:товар|продукт|наявність)\s+\"?([^\"]+)\"?', text_lower)
                 if product_match:
                     product_name = product_match.group(1).strip()
                     answer = get_product_info(product_name)
@@ -302,19 +302,16 @@ def process_text():
         except Exception as e:
             print(f"Error handling product query: {e}")
             answer = f"Виникла помилка при роботі з базою товарів: {str(e)}"
-    
+
     # Handle calendar-related queries directly
     elif any(keyword in text_lower for keyword in ["календар", "запис", "прийом", "вільні", "слоти", "встреча", "встречу", "встретиться", "записаться"]):
-        # Перенаправление на форму записи вместо попытки работы с календарем напрямую
         site_url = request.host_url.rstrip('/')
         booking_url = f"{site_url}/booking"
-        
-        # Подготовка ответа с ссылкой на форму бронирования
         if "ru" in text_lower or "рус" in text_lower:
             answer = f"Для записи на встречу, пожалуйста, заполните форму по ссылке: {booking_url}\n\nВы сможете выбрать удобную дату и время, а также указать тему встречи."
         else:
             answer = f"Для запису на зустріч, будь ласка, заповніть форму за посиланням: {booking_url}\n\nВи зможете вибрати зручну дату та час, а також вказати тему зустрічі."
-    
+
     # For all other queries, use the OpenAI assistant
     else:
         try:
@@ -324,10 +321,10 @@ def process_text():
                 with open(instruction_path, "r", encoding="utf-8") as f:
                     assistant_instructions = f.read().strip()
 
-            knowledge = search_knowledgebase(text)
-            full_message = f"📌 Інструкція:\n{assistant_instructions}\n\n📚 Контекст із бази знань:\n{knowledge}\n\n🗣️ Питання користувача:\n{text}"
+            # Pass instructions directly with the user message
+            full_message = f"📌 Інструкція:\n{assistant_instructions}\n\n🗣️ Питання користувача:\n{text}"
 
-            # Используем обновленную функцию ask_gpt
+            # Use the updated function ask_gpt
             answer = ask_gpt(full_message)
         except Exception as e:
             print(f"Error in process_text: {e}")
